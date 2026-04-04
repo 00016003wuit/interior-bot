@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interior AI Designer</title>
+
+  <!-- Telegram Mini App SDK — required for all Mini Apps -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <style>
+    /* ── Reset & base ─────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #1a1a24;
+      --surface2: #22222f;
+      --accent: #7c5cfc;
+      --accent2: #a78bfa;
+      --text: #f0eeff;
+      --muted: #8880aa;
+      --border: #2e2e42;
+      --radius: 16px;
+      --card-shadow: 0 8px 32px rgba(124, 92, 252, 0.15);
+    }
+
+    /* Use Telegram theme colors when available */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--tg-theme-bg-color, var(--bg));
+      color: var(--tg-theme-text-color, var(--text));
+      min-height: 100vh;
+      padding-bottom: 40px;
+    }
+
+    /* ── Header ───────────────────────────────────── */
+    .header {
+      background: linear-gradient(135deg, #1a0a3c 0%, #0f0f23 60%, #1a1030 100%);
+      padding: 32px 20px 24px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: "";
+      position: absolute;
+      top: -40px; left: 50%;
+      transform: translateX(-50%);
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(124,92,252,0.25) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .header-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+      color: #fff;
+    }
+    .header p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 6px;
+    }
+
+    /* ── Loading state ────────────────────────────── */
+    #loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      gap: 20px;
+    }
+    .spinner {
+      width: 52px; height: 52px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading p {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* ── Empty / no images state ──────────────────── */
+    #empty {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+      gap: 16px;
+    }
+    #empty .empty-icon { font-size: 64px; }
+    #empty h2 { font-size: 18px; font-weight: 600; }
+    #empty p  { font-size: 14px; color: var(--muted); max-width: 260px; }
+
+    /* ── Gallery ──────────────────────────────────── */
+    #gallery {
+      display: none;
+      padding: 24px 16px;
+    }
+    .gallery-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 16px;
+    }
+
+    /* Design cards */
+    .designs-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .design-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--card-shadow);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .design-card:active { transform: scale(0.98); }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 10px;
+    }
+    .card-badge {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 20px;
+      letter-spacing: 0.5px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .card-image-wrap {
+      position: relative;
+      background: var(--surface2);
+    }
+    .card-image-wrap img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      transition: opacity 0.3s;
+    }
+    .card-image-wrap img.loading-img { opacity: 0; }
+    .card-image-wrap img.loaded      { opacity: 1; }
+
+    /* Skeleton shimmer while image loads */
+    .img-skeleton {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.4s infinite;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+    .img-skeleton.hidden { display: none; }
+
+    .card-footer {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px;
+    }
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+    .btn:active { transform: scale(0.97); opacity: 0.85; }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #fff;
+    }
+    .btn-secondary {
+      background: var(--surface2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    /* ── Divider ──────────────────────────────────── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0 20px;
+    }
+
+    /* ── Footer note ──────────────────────────────── */
+    .footer-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 0 20px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <span class="header-icon">🏠</span>
+    <h1>Interior AI Designer</h1>
+    <p>Your AI-generated room redesigns</p>
+  </div>
+
+  <!-- Loading spinner (shown while parsing URL params) -->
+  <div id="loading">
+    <div class="spinner"></div>
+    <p>Loading your designs…</p>
+  </div>
+
+  <!-- Empty state (no images provided) -->
+  <div id="empty">
+    <span class="empty-icon">📸</span>
+    <h2>No designs yet</h2>
+    <p>Send a photo of your room to the bot to generate 3 AI redesigns.</p>
+  </div>
+
+  <!-- Gallery (shown when images are available) -->
+  <div id="gallery">
+    <div class="gallery-label">3 Redesigned Versions</div>
+    <div class="divider"></div>
+    <div class="designs-grid" id="designs-grid">
+      <!-- Cards injected by JS -->
+    </div>
+  </div>
+
+  <div class="footer-note" id="footer-note" style="display:none;">
+    Tap a design to view full-size • Share to save
+  </div>
+
+  <script>
+    // ── Telegram Mini App init ─────────────────────
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();                        // Tell Telegram the app is ready
+      tg.expand();                       // Expand to full height
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => tg.close());
+
+      // Apply Telegram theme to CSS variables
+      if (tg.colorScheme === "light") {
+        document.documentElement.style.setProperty("--bg",      tg.themeParams.bg_color       || "#fff");
+        document.documentElement.style.setProperty("--surface", tg.themeParams.secondary_bg_color || "#f2f2f7");
+        document.documentElement.style.setProperty("--text",    tg.themeParams.text_color     || "#000");
+        document.documentElement.style.setProperty("--muted",   tg.themeParams.hint_color     || "#888");
+        document.documentElement.style.setProperty("--border",  "#e0e0e8");
+        document.documentElement.style.setProperty("--surface2","#e8e8f0");
+      }
+    }
+
+    // ── Parse image URLs from query string ────────
+    // The bot appends ?images=[...] when opening the Mini App
+    function getImagesFromUrl() {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const raw = params.get("images");
+        if (!raw) return [];
+        return JSON.parse(decodeURIComponent(raw));
+      } catch {
+        return [];
+      }
+    }
+
+    // ── Build a design card ────────────────────────
+    function createDesignCard(imageUrl, index) {
+      const styleNames = ["Modern Minimal", "Cozy Scandinavian", "Bold Contemporary"];
+      const style = styleNames[index] || `Design ${index + 1}`;
+
+      const card = document.createElement("div");
+      card.className = "design-card";
+
+      card.innerHTML = `
+        <div class="card-header">
+          <span class="card-badge">Version ${index + 1}</span>
+          <span class="card-title">${style}</span>
+        </div>
+        <div class="card-image-wrap">
+          <div class="img-skeleton" id="skel-${index}"></div>
+          <img
+            id="img-${index}"
+            class="loading-img"
+            alt="${style}"
+            src="${imageUrl}"
+          />
+        </div>
+        <div class="card-footer">
+          <button class="btn btn-primary" onclick="viewFullSize('${imageUrl}')">🔍 Full Size</button>
+          <button class="btn btn-secondary" onclick="shareImage('${imageUrl}', ${index + 1})">📤 Share</button>
+        </div>
+      `;
+
+      // Once image loads, hide skeleton and fade in image
+      const img = card.querySelector(`#img-${index}`);
+      const skel = card.querySelector(`#skel-${index}`);
+      img.addEventListener("load", () => {
+        skel.classList.add("hidden");
+        img.classList.remove("loading-img");
+        img.classList.add("loaded");
+      });
+      img.addEventListener("error", () => {
+        skel.classList.add("hidden");
+        img.classList.remove("loading-img");
+        img.classList.add("loaded");
+        img.style.objectFit = "contain";
+        img.style.padding = "20px";
+        img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Crect width='100' height='60' fill='%231a1a24'/%3E%3Ctext x='50' y='35' text-anchor='middle' fill='%238880aa' font-size='12'%3EImage unavailable%3C/text%3E%3C/svg%3E";
+      });
+
+      return card;
+    }
+
+    // ── Open image full size in browser / Telegram ─
+    function viewFullSize(url) {
+      if (tg) {
+        // Telegram's openLink opens external URLs inside the app
+        tg.openLink(url);
+      } else {
+        window.open(url, "_blank");
+      }
+    }
+
+    // ── Share / download ───────────────────────────
+    function shareImage(url, number) {
+      if (navigator.share) {
+        navigator.share({
+          title: `My AI Interior Design #${number}`,
+          text: "Check out this AI-redesigned room!",
+          url: url,
+        }).catch(() => {});
+      } else {
+        // Fallback: open in new tab so user can long-press to save
+        viewFullSize(url);
+      }
+    }
+
+    // ── Main render logic ──────────────────────────
+    function render() {
+      const images = getImagesFromUrl();
+
+      document.getElementById("loading").style.display = "none";
+
+      if (!images.length) {
+        // No images — show empty state
+        document.getElementById("empty").style.display = "flex";
+        return;
+      }
+
+      // Show gallery
+      const gallery = document.getElementById("gallery");
+      const grid    = document.getElementById("designs-grid");
+      gallery.style.display = "block";
+      document.getElementById("footer-note").style.display = "block";
+
+      images.forEach((url, i) => {
+        grid.appendChild(createDesignCard(url, i));
+      });
+    }
+
+    // Run on page load
+    render();
+  </script>
+</body>
+</html>
