@@ -47,20 +47,24 @@ const replicate = new Replicate({ auth: REPLICATE_TOKEN });
 async function generateDesigns(imageDataUri, count = 3) {
   console.log(`[replicate] generating ${count} designs...`);
   const results = await Promise.all(
-    Array.from({ length: count }, () =>
-      replicate.run("adirik/interior-design:854e8727697a057c525cdb45ab037f64ecca770a4e58ae7be5e46d6bad6c5b6e", {
-        input: {
-          image:               imageDataUri,
-          prompt:              "modern minimalist interior design, bright lighting, clean walls, photorealistic",
-          negative_prompt:     "lowres, watermark, text, logo, deformed, blurry, out of focus, people",
-          guidance_scale:      15,
-          prompt_strength:     0.8,
-          num_inference_steps: 50,
-        },
-      })
-    )
+    Array.from({ length: count }, async () => {
+      const output = await replicate.run(
+        "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
+        {
+          input: {
+            image:               imageDataUri,
+            prompt:              "modern minimalist interior design, bright lighting, clean walls, photorealistic",
+            negative_prompt:     "lowres, watermark, text, people, deformed, blurry",
+            guidance_scale:      15,
+            prompt_strength:     0.8,
+            num_inference_steps: 50,
+          },
+        }
+      );
+      return Array.isArray(output) ? output[0] : String(output);
+    })
   );
-  return results.map((o) => (Array.isArray(o) ? o[0] : String(o))).filter(Boolean);
+  return results.filter(Boolean);
 }
 
 // ── Bot ───────────────────────────────────────
