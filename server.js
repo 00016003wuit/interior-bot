@@ -26,30 +26,32 @@ if (!WEBHOOK_URL)     { console.error("ERROR: WEBHOOK_URL not set");         pro
 
 // ── Style definitions ─────────────────────────
 // Each entry: callback_data key, button label, and the Replicate prompt
+const BASE = "preserve original room structure, same walls same windows same doors, only change interior decoration and furniture, do not add or remove architectural elements, photorealistic, high quality";
+
 const STYLES = {
   modern: {
     label:  "🏙️ Modern Minimalist",
-    prompt: "modern minimalist interior design, bright lighting, clean walls, neutral palette, photorealistic",
+    prompt: `modern minimalist interior design, bright lighting, clean walls, neutral palette, simple furniture, ${BASE}`,
   },
   hitech: {
     label:  "🤖 Hi-Tech / Futuristic",
-    prompt: "futuristic hi-tech interior design, smart home, LED lighting, metallic surfaces, glass walls, photorealistic",
+    prompt: `futuristic hi-tech interior design, smart home, LED accent lighting, metallic surfaces, sleek furniture, ${BASE}`,
   },
   contemporary: {
     label:  "🏛️ Contemporary",
-    prompt: "contemporary interior design, elegant furniture, warm tones, open space, photorealistic",
+    prompt: `contemporary interior design, elegant furniture, warm tones, layered textures, refined decor, ${BASE}`,
   },
   scandinavian: {
     label:  "🌿 Scandinavian",
-    prompt: "Scandinavian interior design, cozy hygge atmosphere, light wood, white walls, natural textures, photorealistic",
+    prompt: `Scandinavian interior design, cozy hygge atmosphere, light wood furniture, white walls, natural textures, wool textiles, ${BASE}`,
   },
   mixed: {
     label:  "🎨 Mixed Materials",
-    prompt: "mixed materials interior design, concrete, wood, metal, brick, eclectic style, photorealistic",
+    prompt: `mixed materials interior design, concrete and wood and metal accents, brick details, eclectic decor, ${BASE}`,
   },
   oriental: {
     label:  "🕌 Oriental / Eastern",
-    prompt: "oriental eastern interior design, rich fabrics, ornate patterns, warm amber lighting, traditional decor, photorealistic",
+    prompt: `oriental eastern interior design, rich fabrics, ornate patterns, warm amber lighting, traditional wooden furniture, decorative lanterns, ${BASE}`,
   },
 };
 
@@ -120,8 +122,8 @@ async function generateDesign(imageDataUri, prompt) {
         prompt,
         negative_prompt:     "lowres, watermark, text, people, deformed, blurry",
         guidance_scale:      15,
-        prompt_strength:     0.8,
-        num_inference_steps: 50,
+        prompt_strength:     0.6,
+        num_inference_steps: 75,
       },
     }
   );
