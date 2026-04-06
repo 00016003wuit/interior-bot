@@ -274,12 +274,14 @@ bot.on(message("text"), async (ctx) => {
 const app = express();
 app.use(express.static(path.join(__dirname, "public")));
 
-// Parse JSON only on the webhook route — keeps the raw body intact for Telegram
-app.use("/webhook", express.json());
-
-// Telegram sends all updates to this endpoint as JSON POST requests
-app.post("/webhook", (req, res) => {
-  bot.handleUpdate(req.body, res);
+// Telegram sends all updates to this endpoint as JSON POST requests.
+// - express.json() is inline so it only parses this route
+// - res.sendStatus(200) replies to Telegram immediately (required within 10s)
+// - bot.handleUpdate runs async after the 200 is already sent
+app.post("/webhook", express.json(), (req, res) => {
+  console.log("[webhook] received update:", JSON.stringify(req.body));
+  res.sendStatus(200);
+  bot.handleUpdate(req.body);
 });
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
