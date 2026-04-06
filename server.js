@@ -95,7 +95,7 @@ bot.on(message("photo"), async (ctx) => {
     );
   }
 
-  const statusMsg = await ctx.reply("⏳ Generating 3 redesigns… this takes 30–60 seconds.");
+  const statusMsg = await ctx.reply("⏳ Generating your redesign… this takes 30–60 seconds.");
 
   try {
     // Get largest photo size Telegram provides
@@ -113,7 +113,7 @@ bot.on(message("photo"), async (ctx) => {
 
     // Convert to base64 data URI and send to Replicate
     const imageDataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
-    const imageUrls    = await generateDesigns(imageDataUri, 3);
+    const imageUrls    = await generateDesigns(imageDataUri, 1);
 
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
@@ -124,7 +124,7 @@ bot.on(message("photo"), async (ctx) => {
         type:  "photo",
         media: url,
         ...(i === 0 && {
-          caption:    `✨ 3 redesigned versions of your room!\nFree requests remaining: ${remaining}`,
+          caption:    `✨ Here is your redesigned room!\nFree requests remaining: ${remaining}`,
         }),
       }))
     );
