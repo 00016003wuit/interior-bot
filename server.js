@@ -48,7 +48,7 @@ async function generateDesigns(imageDataUri, count = 3) {
   console.log(`[replicate] generating ${count} designs...`);
   const results = await Promise.all(
     Array.from({ length: count }, () =>
-      replicate.run("adirik/interior-design", {
+      replicate.run("adirik/interior-design:854e8727697a057c525cdb45ab037f64ecca770a4e58ae7be5e46d6bad6c5b6e", {
         input: {
           image:               imageDataUri,
           prompt:              "modern minimalist interior design, bright lighting, clean walls, photorealistic",
