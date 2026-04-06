@@ -120,9 +120,9 @@ async function generateDesign(imageDataUri, prompt) {
       input: {
         image:               imageDataUri,
         prompt,
-        negative_prompt:     "lowres, watermark, text, people, deformed, blurry",
+        negative_prompt:     "lowres, watermark, text, people, deformed, blurry, door, window, archway, opening, additional rooms, extra walls, structural changes, new architectural elements",
         guidance_scale:      15,
-        prompt_strength:     0.6,
+        prompt_strength:     0.45,
         num_inference_steps: 75,
       },
     }
