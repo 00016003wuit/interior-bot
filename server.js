@@ -24,8 +24,86 @@ if (!TOKEN)           { console.error("ERROR: TELEGRAM_BOT_TOKEN not set");  pro
 if (!REPLICATE_TOKEN) { console.error("ERROR: REPLICATE_API_TOKEN not set"); process.exit(1); }
 if (!WEBHOOK_URL)     { console.error("ERROR: WEBHOOK_URL not set");         process.exit(1); }
 
+// ── Translations ──────────────────────────────
+const T = {
+  en: {
+    selectLang:      "Please choose your language:",
+    welcome:         "👋 Welcome to Interior AI Designer!\n\nSend me a photo of your room and I'll redesign it for you.\n\n✨ First 10 requests are free. After that: 1000 UZS per design.",
+    sendPhoto:       "📸 Send me a photo of your room to get started!",
+    chooseStyle:     "Choose a style for your room redesign:",
+    generating:      (label) => `Style selected: ${label}\n\n⏳ Generating your redesign… this takes 30–60 seconds.`,
+    result:          (label, remaining) => `✨ Here is your redesigned room!\nStyle: ${label}\nFree requests remaining: ${remaining}`,
+    gallery:         "🖼 View full-size in the gallery:",
+    galleryBtn:      "🎨 Open Gallery",
+    expired:         "⚠️ Your photo has expired (10 min limit). Please send it again.",
+    limitReached:    `You've used all ${FREE_LIMIT} free requests.\n\nTo continue, please pay 1000 UZS via Click, Payme or Uzum.\nContact support after payment to unlock more requests.`,
+    usage:           (used, remaining) => `Used: ${used} / ${FREE_LIMIT}\nFree remaining: ${remaining}`,
+    error:           (msg) => `❌ Something went wrong: ${msg}\n\nPlease try again.`,
+    unknownStyle:    "Unknown style. Please send a photo again.",
+  },
+  ru: {
+    selectLang:      "Пожалуйста, выберите язык:",
+    welcome:         "👋 Добро пожаловать в Interior AI Designer!\n\nОтправьте мне фото вашей комнаты, и я перепроектирую её для вас.\n\n✨ Первые 10 запросов бесплатны. Далее: 1000 UZS за дизайн.",
+    sendPhoto:       "📸 Отправьте мне фото вашей комнаты, чтобы начать!",
+    chooseStyle:     "Выберите стиль для редизайна комнаты:",
+    generating:      (label) => `Стиль выбран: ${label}\n\n⏳ Генерирую дизайн… это займёт 30–60 секунд.`,
+    result:          (label, remaining) => `✨ Вот ваша обновлённая комната!\nСтиль: ${label}\nОсталось бесплатных запросов: ${remaining}`,
+    gallery:         "🖼 Открыть в полном размере:",
+    galleryBtn:      "🎨 Открыть галерею",
+    expired:         "⚠️ Время ожидания вашего фото истекло (10 мин). Пожалуйста, отправьте фото снова.",
+    limitReached:    `Вы использовали все ${FREE_LIMIT} бесплатных запросов.\n\nДля продолжения оплатите 1000 UZS через Click, Payme или Uzum.\nСвяжитесь с поддержкой после оплаты.`,
+    usage:           (used, remaining) => `Использовано: ${used} / ${FREE_LIMIT}\nОсталось бесплатных: ${remaining}`,
+    error:           (msg) => `❌ Что-то пошло не так: ${msg}\n\nПожалуйста, попробуйте ещё раз.`,
+    unknownStyle:    "Неизвестный стиль. Пожалуйста, отправьте фото снова.",
+  },
+  uz: {
+    selectLang:      "Iltimos, tilni tanlang:",
+    welcome:         "👋 Interior AI Designer'ga xush kelibsiz!\n\nMenga xonangizning rasmini yuboring, men uni qayta dizayn qilaman.\n\n✨ Birinchi 10 ta so'rov bepul. Keyin: har bir dizayn uchun 1000 UZS.",
+    sendPhoto:       "📸 Boshlash uchun xonangizning rasmini yuboring!",
+    chooseStyle:     "Xonangiz uchun uslubni tanlang:",
+    generating:      (label) => `Uslub tanlandi: ${label}\n\n⏳ Dizayn yaratilmoqda… bu 30–60 soniya oladi.`,
+    result:          (label, remaining) => `✨ Mana sizning yangi xonangiz!\nUslub: ${label}\nQolgan bepul so'rovlar: ${remaining}`,
+    gallery:         "🖼 To'liq o'lchamda ko'rish:",
+    galleryBtn:      "🎨 Galereyani ochish",
+    expired:         "⚠️ Rasmingiz vaqti tugadi (10 daqiqa). Iltimos, rasmni qayta yuboring.",
+    limitReached:    `Siz barcha ${FREE_LIMIT} ta bepul so'rovdan foydalandingiz.\n\nDavom etish uchun Click, Payme yoki Uzum orqali 1000 UZS to'lang.\nTo'lovdan keyin qo'llab-quvvatlash xizmati bilan bog'laning.`,
+    usage:           (used, remaining) => `Ishlatildi: ${used} / ${FREE_LIMIT}\nQoldi bepul: ${remaining}`,
+    error:           (msg) => `❌ Xatolik yuz berdi: ${msg}\n\nIltimos, qayta urining.`,
+    unknownStyle:    "Noma'lum uslub. Iltimos, rasmni qayta yuboring.",
+  },
+};
+
+// Language selection keyboard — shown on /start
+const LANG_KEYBOARD = {
+  inline_keyboard: [[
+    { text: "🇬🇧 English", callback_data: "lang:en" },
+    { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+    { text: "🇺🇿 O'zbek",  callback_data: "lang:uz" },
+  ]],
+};
+
+// ── User language store ───────────────────────
+// Persisted to langs.json so preferences survive restarts.
+const LANGS_FILE = path.join(__dirname, "langs.json");
+
+function loadLangs() {
+  try { return JSON.parse(fs.readFileSync(LANGS_FILE, "utf8")); }
+  catch { return {}; }
+}
+function getLang(userId) {
+  return loadLangs()[String(userId)] || "en";
+}
+function setLang(userId, lang) {
+  const data = loadLangs();
+  data[String(userId)] = lang;
+  fs.writeFileSync(LANGS_FILE, JSON.stringify(data, null, 2));
+}
+// Shorthand: get the translation object for a user
+function t(userId) {
+  return T[getLang(userId)];
+}
+
 // ── Style definitions ─────────────────────────
-// Each entry: callback_data key, button label, and the Replicate prompt
 const BASE = "preserve original room structure, same walls same windows same doors, only change interior decoration and furniture, do not add or remove architectural elements, photorealistic, high quality";
 
 const STYLES = {
@@ -55,7 +133,6 @@ const STYLES = {
   },
 };
 
-// Inline keyboard rows — split into pairs for a 2-column layout
 const STYLE_KEYBOARD = {
   inline_keyboard: [
     [
@@ -74,10 +151,8 @@ const STYLE_KEYBOARD = {
 };
 
 // ── Pending photo store ───────────────────────
-// Temporarily holds a user's photo file_id while they choose a style.
-// Keyed by userId (number). Cleared after generation or after 10 minutes.
 const pendingPhotos = new Map(); // userId → { fileId, expiresAt }
-const PENDING_TTL   = 10 * 60 * 1000; // 10 minutes in ms
+const PENDING_TTL   = 10 * 60 * 1000;
 
 function setPending(userId, fileId) {
   pendingPhotos.set(userId, { fileId, expiresAt: Date.now() + PENDING_TTL });
@@ -139,14 +214,31 @@ bot.catch((err, ctx) => {
   console.error("[bot:error]", ctx.updateType, err.message);
 });
 
-// /start
-bot.start((ctx) => ctx.reply("Hello! Send me a photo of your room."));
+// /start — always show language picker first
+bot.start((ctx) => {
+  return ctx.reply(T.en.selectLang, { reply_markup: LANG_KEYBOARD });
+});
+
+// Language selected
+bot.action(/^lang:(en|ru|uz)$/, async (ctx) => {
+  const lang   = ctx.match[1];
+  const userId = ctx.from.id;
+  setLang(userId, lang);
+  await ctx.answerCbQuery();
+  await ctx.editMessageText(t(userId).welcome);
+});
 
 // /usage
 bot.command("usage", async (ctx) => {
-  const used      = getUsage(ctx.from.id);
+  const userId    = ctx.from.id;
+  const used      = getUsage(userId);
   const remaining = Math.max(0, FREE_LIMIT - used);
-  return ctx.reply(`Used: ${used} / ${FREE_LIMIT}\nFree remaining: ${remaining}`);
+  return ctx.reply(t(userId).usage(used, remaining));
+});
+
+// /lang — allow changing language at any time
+bot.command("lang", (ctx) => {
+  return ctx.reply(T.en.selectLang, { reply_markup: LANG_KEYBOARD });
 });
 
 // Photo received → check limit, store file_id, show style menu
@@ -154,50 +246,40 @@ bot.on(message("photo"), async (ctx) => {
   const userId = ctx.from.id;
 
   if (getUsage(userId) >= FREE_LIMIT) {
-    return ctx.reply(
-      `You've used all ${FREE_LIMIT} free requests.\n\n` +
-      `To continue, please pay 1000 UZS via Click, Payme or Uzum.\n` +
-      `Contact support after payment to unlock more requests.`
-    );
+    return ctx.reply(t(userId).limitReached);
   }
 
-  // Store the largest photo size while user picks a style
   const photos  = ctx.message.photo;
   const largest = photos[photos.length - 1];
   setPending(userId, largest.file_id);
   console.log(`[photo] stored pending file_id=${largest.file_id} for user=${userId}`);
 
-  await ctx.reply("Choose a style for your room redesign:", {
-    reply_markup: STYLE_KEYBOARD,
-  });
+  await ctx.reply(t(userId).chooseStyle, { reply_markup: STYLE_KEYBOARD });
 });
 
-// Style button tapped → retrieve pending photo, generate, send result
+// Style button tapped → generate
 bot.action(/^style:(.+)$/, async (ctx) => {
   const styleKey = ctx.match[1];
   const style    = STYLES[styleKey];
   const userId   = ctx.from.id;
 
-  // Always acknowledge the callback to remove the loading spinner on the button
   await ctx.answerCbQuery();
 
   if (!style) {
-    return ctx.reply("Unknown style. Please send a photo again.");
+    return ctx.reply(t(userId).unknownStyle);
   }
 
   const fileId = getPending(userId);
   if (!fileId) {
-    return ctx.reply("⚠️ Your photo has expired (10 min limit). Please send it again.");
+    return ctx.reply(t(userId).expired);
   }
 
   clearPending(userId);
 
-  // Edit the style menu message to show which style was chosen
-  await ctx.editMessageText(`Style selected: ${style.label}\n\n⏳ Generating your redesign… this takes 30–60 seconds.`)
-    .catch(() => ctx.reply(`Style selected: ${style.label}\n\n⏳ Generating your redesign… this takes 30–60 seconds.`));
+  await ctx.editMessageText(t(userId).generating(style.label))
+    .catch(() => ctx.reply(t(userId).generating(style.label)));
 
   try {
-    // Download from Telegram
     const fileLink = await ctx.telegram.getFileLink(fileId);
     console.log(`[action] downloading photo for user=${userId}...`);
     const res = await fetch(fileLink.href);
@@ -212,35 +294,35 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
     await ctx.replyWithPhoto(imageUrl, {
-      caption: `✨ Here is your redesigned room!\nStyle: ${style.label}\nFree requests remaining: ${remaining}`,
+      caption: t(userId).result(style.label, remaining),
     });
 
     const encodedUrls = encodeURIComponent(JSON.stringify([imageUrl]));
-    await ctx.reply("View full-size in the gallery:", {
+    await ctx.reply(t(userId).gallery, {
       reply_markup: {
         inline_keyboard: [[
-          { text: "🎨 Open Gallery", web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
+          { text: t(userId).galleryBtn, web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
         ]],
       },
     });
 
   } catch (err) {
     console.error("[action] generation failed:", err.message);
-    await ctx.reply(`❌ Something went wrong: ${err.message}\n\nPlease try again.`);
+    await ctx.reply(t(userId).error(err.message));
   }
 });
 
 // Plain text fallback
 bot.on(message("text"), (ctx) => {
   if (!ctx.message.text.startsWith("/")) {
-    return ctx.reply("📸 Send me a photo of your room to get started!");
+    return ctx.reply(t(ctx.from.id).sendPhoto);
   }
 });
 
 // ── Express ───────────────────────────────────
 const app = express();
 
-app.use(express.json()); // must be before all routes
+app.use(express.json());
 
 app.post("/webhook", (req, res) => {
   console.log("[webhook] update:", JSON.stringify(req.body));
