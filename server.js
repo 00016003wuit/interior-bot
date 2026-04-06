@@ -1,18 +1,12 @@
 /**
- * Interior Design Bot — Telegraf + Replicate + Telegraph image hosting
+ * Interior Design Bot — Telegraf + Replicate
  *
  * Request flow:
  *  1. User sends a room photo in Telegram
  *  2. Bot downloads the photo from Telegram (private URL, server-side only)
- *  3. Photo is uploaded to telegra.ph → returns a permanent public URL
- *  4. Public URL is passed to Replicate's adirik/interior-design model
+ *  3. Photo is converted to a base64 data URI
+ *  4. Data URI is passed directly to Replicate's adirik/interior-design model
  *  5. 3 redesigned images are generated in parallel and sent back to the user
- *
- * Why Telegraph for hosting:
- *  Replicate needs a publicly reachable image URL. Telegram's own file URLs
- *  embed the bot token and are not accessible by external services. Telegraph
- *  (telegra.ph) is Telegram's own anonymous image host — no account or API key
- *  required. We POST the raw image bytes there and get back a permanent URL.
  */
 
 const path = require("path");
@@ -35,14 +29,24 @@ const WEBHOOK_URL     = process.env.WEBHOOK_URL;
 const PORT            = process.env.PORT || 3000;
 const APP_URL         = process.env.APP_URL || `http://localhost:${PORT}`;
 
-// Mask tokens in logs: show enough to confirm which key is loaded without leaking it
+// Confirm which env vars loaded — shows masked values so secrets aren't exposed in logs
 console.log("[config] TELEGRAM_BOT_TOKEN :", TOKEN           ? `${TOKEN.slice(0,8)}...${TOKEN.slice(-4)}`           : "MISSING ❌");
 console.log("[config] REPLICATE_API_TOKEN:", REPLICATE_TOKEN ? `${REPLICATE_TOKEN.slice(0,4)}...${REPLICATE_TOKEN.slice(-4)}` : "MISSING ❌");
 console.log("[config] WEBHOOK_URL        :", WEBHOOK_URL     || "MISSING ❌");
+console.log("[config] Node.js version    :", process.version);
 
-if (!TOKEN)           throw new Error("TELEGRAM_BOT_TOKEN is not set in .env");
-if (!REPLICATE_TOKEN) throw new Error("REPLICATE_API_TOKEN is not set in .env");
-if (!WEBHOOK_URL)     throw new Error("WEBHOOK_URL is not set in .env");
+// Validate all required env vars up front and list every missing one before exiting
+const missing = [
+  !TOKEN           && "TELEGRAM_BOT_TOKEN",
+  !REPLICATE_TOKEN && "REPLICATE_API_TOKEN",
+  !WEBHOOK_URL     && "WEBHOOK_URL",
+].filter(Boolean);
+
+if (missing.length) {
+  console.error("[config] Missing required environment variables:", missing.join(", "));
+  console.error("[config] Set them in Railway → your project → Variables tab");
+  process.exit(1);
+}
 
 // ─────────────────────────────────────────────
 // Usage tracking  (persisted to usage.json)
