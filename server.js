@@ -1,312 +1,178 @@
-/**
- * Interior Design Bot — Telegraf + Replicate
- *
- * Request flow:
- *  1. User sends a room photo in Telegram
- *  2. Bot downloads the photo from Telegram (private URL, server-side only)
- *  3. Photo is converted to a base64 data URI
- *  4. Data URI is passed directly to Replicate's adirik/interior-design model
- *  5. 3 redesigned images are generated in parallel and sent back to the user
- */
+require("dotenv").config();
 
-const path = require("path");
-const fs   = require("fs");
+const express      = require("express");
+const { Telegraf } = require("telegraf");
+const { message }  = require("telegraf/filters");
+const Replicate    = require("replicate");
+const path         = require("path");
+const fs           = require("fs");
 
-// Always resolve .env relative to this file, not the shell's working directory
-require("dotenv").config({ path: path.join(__dirname, ".env") });
-
-const express        = require("express");
-const { Telegraf }   = require("telegraf");
-const { message }    = require("telegraf/filters");
-const Replicate      = require("replicate");
-
-// ─────────────────────────────────────────────
-// Config & startup validation
-// ─────────────────────────────────────────────
+// ── Env ───────────────────────────────────────
 const TOKEN           = process.env.TELEGRAM_BOT_TOKEN;
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
 const WEBHOOK_URL     = process.env.WEBHOOK_URL;
 const PORT            = process.env.PORT || 3000;
 const APP_URL         = process.env.APP_URL || `http://localhost:${PORT}`;
+const FREE_LIMIT      = 10;
 
-// Confirm which env vars loaded — shows masked values so secrets aren't exposed in logs
-console.log("[config] TELEGRAM_BOT_TOKEN :", TOKEN           ? `${TOKEN.slice(0,8)}...${TOKEN.slice(-4)}`           : "MISSING ❌");
-console.log("[config] REPLICATE_API_TOKEN:", REPLICATE_TOKEN ? `${REPLICATE_TOKEN.slice(0,4)}...${REPLICATE_TOKEN.slice(-4)}` : "MISSING ❌");
-console.log("[config] WEBHOOK_URL        :", WEBHOOK_URL     || "MISSING ❌");
-console.log("[config] Node.js version    :", process.version);
+console.log("TELEGRAM_BOT_TOKEN :", TOKEN           ? TOKEN.slice(0, 8) + "..."  : "MISSING");
+console.log("REPLICATE_API_TOKEN:", REPLICATE_TOKEN ? REPLICATE_TOKEN.slice(0, 4) + "..." : "MISSING");
+console.log("WEBHOOK_URL        :", WEBHOOK_URL || "MISSING");
+console.log("PORT               :", PORT);
 
-// Validate all required env vars up front and list every missing one before exiting
-const missing = [
-  !TOKEN           && "TELEGRAM_BOT_TOKEN",
-  !REPLICATE_TOKEN && "REPLICATE_API_TOKEN",
-  !WEBHOOK_URL     && "WEBHOOK_URL",
-].filter(Boolean);
+if (!TOKEN)           { console.error("ERROR: TELEGRAM_BOT_TOKEN not set"); process.exit(1); }
+if (!REPLICATE_TOKEN) { console.error("ERROR: REPLICATE_API_TOKEN not set"); process.exit(1); }
+if (!WEBHOOK_URL)     { console.error("ERROR: WEBHOOK_URL not set"); process.exit(1); }
 
-if (missing.length) {
-  console.error("[config] Missing required environment variables:", missing.join(", "));
-  console.error("[config] Set them in Railway → your project → Variables tab");
-  process.exit(1);
-}
-
-// ─────────────────────────────────────────────
-// Usage tracking  (persisted to usage.json)
-// ─────────────────────────────────────────────
+// ── Usage tracking ────────────────────────────
 const USAGE_FILE = path.join(__dirname, "usage.json");
-const FREE_LIMIT = 10;
 
 function loadUsage() {
   try { return JSON.parse(fs.readFileSync(USAGE_FILE, "utf8")); }
   catch { return {}; }
 }
-function saveUsage(data) {
-  fs.writeFileSync(USAGE_FILE, JSON.stringify(data, null, 2));
-}
-function getUserUsage(userId) {
+function getUsage(userId) {
   return loadUsage()[String(userId)] || 0;
 }
-function incrementUsage(userId) {
+function incUsage(userId) {
   const data = loadUsage();
   data[String(userId)] = (data[String(userId)] || 0) + 1;
-  saveUsage(data);
+  fs.writeFileSync(USAGE_FILE, JSON.stringify(data, null, 2));
   return data[String(userId)];
 }
 
-// ─────────────────────────────────────────────
-// Step 1 — Download photo from Telegram
-// ─────────────────────────────────────────────
-/**
- * Returns the raw image as a Buffer.
- * The Telegram file URL is private (contains the bot token) and must be
- * fetched server-side — external services like Replicate cannot use it directly.
- */
-async function downloadFromTelegram(url) {
-  console.log("[telegram] downloading photo...");
-  const res = await fetch(url);
-  if (!res.ok) throw new Error(`Telegram download failed: ${res.status} ${res.statusText}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  console.log(`[telegram] downloaded ${buf.length} bytes`);
-  return buf;
-}
-
-// ─────────────────────────────────────────────
-// Step 2 — Generate designs via Replicate
-// ─────────────────────────────────────────────
+// ── Replicate ─────────────────────────────────
 const replicate = new Replicate({ auth: REPLICATE_TOKEN });
 
-/**
- * Runs adirik/interior-design `count` times in parallel.
- *
- * Accepts a base64 data URI as the image input — no external hosting needed.
- * The model treats "data:image/jpeg;base64,..." the same as a public URL.
- *
- * Why no version hash: omitting it lets Replicate always use the latest release.
- */
 async function generateDesigns(imageDataUri, count = 3) {
-  console.log(`[replicate] starting ${count} parallel generations`);
-
-  const promises = Array.from({ length: count }, (_, i) =>
-    replicate.run("adirik/interior-design", {
-      input: {
-        image:               imageDataUri,
-        prompt:              "modern minimalist interior design, bright lighting, clean walls, photorealistic",
-        negative_prompt:     "lowres, watermark, text, logo, deformed, blurry, out of focus, people",
-        guidance_scale:      15,
-        prompt_strength:     0.8,
-        num_inference_steps: 50,
-      },
-    }).then((output) => {
-      // Model returns a URL string or a single-element array — normalise to string
-      const url = Array.isArray(output) ? output[0] : String(output);
-      console.log(`[replicate] design ${i + 1} ready: ${url}`);
-      return url;
-    })
+  console.log(`[replicate] generating ${count} designs...`);
+  const results = await Promise.all(
+    Array.from({ length: count }, () =>
+      replicate.run("adirik/interior-design", {
+        input: {
+          image:               imageDataUri,
+          prompt:              "modern minimalist interior design, bright lighting, clean walls, photorealistic",
+          negative_prompt:     "lowres, watermark, text, logo, deformed, blurry, out of focus, people",
+          guidance_scale:      15,
+          prompt_strength:     0.8,
+          num_inference_steps: 50,
+        },
+      })
+    )
   );
-
-  const urls = (await Promise.all(promises)).filter(Boolean);
-  if (!urls.length) throw new Error("Replicate returned no output URLs");
-  return urls;
+  return results.map((o) => (Array.isArray(o) ? o[0] : String(o))).filter(Boolean);
 }
 
-// ─────────────────────────────────────────────
-// Telegraf bot
-// ─────────────────────────────────────────────
+// ── Bot ───────────────────────────────────────
 const bot = new Telegraf(TOKEN);
 
-// Catch-all error handler — prevents unhandled rejections from killing the process
 bot.catch((err, ctx) => {
-  console.error(`[bot:error] update_type=${ctx.updateType} —`, err.message);
+  console.error("[bot:error]", ctx.updateType, err.message);
 });
 
-// Debug middleware — logs every incoming message
-bot.use((ctx, next) => {
-  const m = ctx.message;
-  if (m) {
-    console.log(
-      `[update] from=${m.from?.id} (@${m.from?.username ?? "?"}) ` +
-      `type=${m.photo ? "photo" : "text"} text=${JSON.stringify(m.text ?? "")}`
-    );
-  }
-  return next();
-});
+bot.start((ctx) => ctx.reply("Hello! Send me a photo of your room."));
 
-// ── /start ──────────────────────────────────
-bot.start(async (ctx) => {
-  const name = ctx.from?.first_name || "there";
-  console.log(`[/start] user ${ctx.from?.id}`);
-
-  await ctx.reply("Hello! Send me a photo of your room.");
-  await ctx.reply(
-    `👋 Hi ${name}! Welcome to *Interior AI Designer*.\n\n` +
-    `📸 Send me a *photo* of your room and I'll generate *3 redesigned versions*.\n\n` +
-    `✨ First *${FREE_LIMIT} requests* are free. After that: *1 000 UZS* per batch.`,
-    {
-      parse_mode: "Markdown",
-      reply_markup: {
-        inline_keyboard: [[
-          { text: "🎨 Open Design Gallery", web_app: { url: APP_URL } },
-        ]],
-      },
-    }
-  );
-});
-
-// ── /usage ──────────────────────────────────
 bot.command("usage", async (ctx) => {
-  const used      = getUserUsage(ctx.from.id);
+  const used      = getUsage(ctx.from.id);
   const remaining = Math.max(0, FREE_LIMIT - used);
-  await ctx.reply(
-    `📊 *Your usage*\n` +
-    `• Used: *${used}* / ${FREE_LIMIT}\n` +
-    `• Remaining: *${remaining}* free requests\n\n` +
-    (remaining === 0
-      ? "💳 All free requests used. Send a photo to see payment options."
-      : "Send a photo to generate your interior designs!"),
-    { parse_mode: "Markdown" }
+  return ctx.reply(
+    `Used: ${used} / ${FREE_LIMIT}\nFree remaining: ${remaining}`,
   );
 });
 
-// ── Photo handler (main feature) ─────────────
 bot.on(message("photo"), async (ctx) => {
   const userId = ctx.from.id;
 
-  // ── 1. Check free limit ──────────────────────
-  if (getUserUsage(userId) >= FREE_LIMIT) {
+  if (getUsage(userId) >= FREE_LIMIT) {
     return ctx.reply(
-      `⚠️ You've used all *${FREE_LIMIT} free* requests.\n\n` +
-      `💳 To continue, pay *1 000 UZS* via:\n` +
-      `• *Click* — click.uz\n` +
-      `• *Payme* — payme.uz\n` +
-      `• *Uzum* — uzum.uz\n\n` +
-      `After payment, contact support to unlock more requests.`,
-      { parse_mode: "Markdown" }
+      `You've used all ${FREE_LIMIT} free requests.\n\n` +
+      `To continue, please pay 1000 UZS via Click, Payme or Uzum.\n` +
+      `Contact support after payment to unlock more requests.`
     );
   }
 
-  // ── 2. Acknowledge so the user knows we're working ──
-  const processingMsg = await ctx.reply(
-    "⏳ Working on it… downloading your photo, uploading to our image host, then generating 3 designs. This takes 30–60 s."
-  );
-
-  const deleteProcessing = () =>
-    ctx.telegram.deleteMessage(ctx.chat.id, processingMsg.message_id).catch(() => {});
+  const statusMsg = await ctx.reply("⏳ Generating 3 redesigns… this takes 30–60 seconds.");
 
   try {
-    // ── 3. Pick the highest-resolution version Telegram provides ──
+    // Get largest photo size Telegram provides
     const photos  = ctx.message.photo;
     const largest = photos[photos.length - 1];
-    console.log(`[photo] file_id=${largest.file_id} size=${largest.file_size ?? "?"} B`);
+    console.log(`[photo] file_id=${largest.file_id}`);
 
-    // ── 4. Get the private download URL from Telegram ──
+    // Download from Telegram (private URL, must be fetched server-side)
     const fileLink = await ctx.telegram.getFileLink(largest.file_id);
+    console.log(`[photo] downloading from Telegram...`);
+    const res = await fetch(fileLink.href);
+    if (!res.ok) throw new Error(`Telegram download failed: ${res.status}`);
+    const buf = Buffer.from(await res.arrayBuffer());
+    console.log(`[photo] downloaded ${buf.length} bytes`);
 
-    // ── 5. Download the image (server-side, private URL) ──
-    const imageBuffer = await downloadFromTelegram(fileLink.href);
+    // Convert to base64 data URI and send to Replicate
+    const imageDataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
+    const imageUrls    = await generateDesigns(imageDataUri, 3);
 
-    // ── 6. Convert to base64 data URI ──
-    const imageDataUri = `data:image/jpeg;base64,${imageBuffer.toString("base64")}`;
-    console.log(`[photo] data URI length: ${imageDataUri.length} chars`);
-
-    // ── 7. Generate 3 redesigns via Replicate ──
-    const imageUrls = await generateDesigns(imageDataUri, 3);
-
-    // ── 8. Record usage only after successful generation ──
-    const newCount  = incrementUsage(userId);
+    const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-    // ── 9. Send the 3 images as a grouped album ──
+    // Send results
     await ctx.replyWithMediaGroup(
       imageUrls.map((url, i) => ({
         type:  "photo",
         media: url,
         ...(i === 0 && {
-          caption:    `✨ *3 redesigned versions of your room!*\n📊 Free requests remaining: *${remaining}*`,
-          parse_mode: "Markdown",
+          caption:    `✨ 3 redesigned versions of your room!\nFree requests remaining: ${remaining}`,
         }),
       }))
     );
 
-    // ── 10. Mini App button to browse full-size ──
     const encodedUrls = encodeURIComponent(JSON.stringify(imageUrls));
-    await ctx.reply("🖼 View full-size in the gallery:", {
+    await ctx.reply("View full-size in the gallery:", {
       reply_markup: {
         inline_keyboard: [[
-          { text: "🎨 Open Design Gallery", web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
+          { text: "🎨 Open Gallery", web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
         ]],
       },
     });
 
-    await deleteProcessing();
-
   } catch (err) {
-    console.error("[photo] pipeline failed:", err);
-    await deleteProcessing();
-    await ctx.reply(
-      `❌ Something went wrong: ${err.message}\n\nPlease try again in a moment.`
-    );
+    console.error("[photo] failed:", err.message);
+    await ctx.reply(`❌ Something went wrong: ${err.message}\n\nPlease try again.`);
+  } finally {
+    ctx.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
   }
 });
 
-// ── Fallback for plain text ──────────────────
-bot.on(message("text"), async (ctx) => {
-  if (ctx.message.text?.startsWith("/")) return; // handled by command handlers above
-  await ctx.reply("📸 Please send a photo of your room to get started!");
+bot.on(message("text"), (ctx) => {
+  if (!ctx.message.text.startsWith("/")) {
+    return ctx.reply("📸 Send me a photo of your room to get started!");
+  }
 });
 
-// ─────────────────────────────────────────────
-// Express — Mini App frontend + Telegram webhook
-// ─────────────────────────────────────────────
+// ── Express ───────────────────────────────────
 const app = express();
-app.use(express.static(path.join(__dirname, "public")));
 
-// Telegram sends all updates to this endpoint as JSON POST requests.
-// - express.json() is inline so it only parses this route
-// - res.sendStatus(200) replies to Telegram immediately (required within 10s)
-// - bot.handleUpdate runs async after the 200 is already sent
-app.post("/webhook", express.json(), (req, res) => {
-  console.log("[webhook] received update:", JSON.stringify(req.body));
+app.use(express.json()); // global JSON parsing — must be before all routes
+
+app.post("/webhook", (req, res) => {
+  console.log("[webhook] update:", JSON.stringify(req.body));
   res.sendStatus(200);
   bot.handleUpdate(req.body);
 });
 
+app.use(express.static(path.join(__dirname, "public")));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
-// ─────────────────────────────────────────────
-// Start server, then register the webhook URL
-// ─────────────────────────────────────────────
+// ── Start ─────────────────────────────────────
 app.listen(PORT, async () => {
-  console.log(`[server] http://localhost:${PORT}`);
-  console.log(`[server] Mini App: ${APP_URL}`);
-
-  const webhookEndpoint = `${WEBHOOK_URL}/webhook`;
+  console.log(`[server] listening on port ${PORT}`);
   try {
-    await bot.telegram.setWebhook(webhookEndpoint);
-    console.log(`[bot] webhook set to: ${webhookEndpoint}`);
+    await bot.telegram.setWebhook(`${WEBHOOK_URL}/webhook`);
+    console.log(`[bot] webhook set: ${WEBHOOK_URL}/webhook`);
   } catch (err) {
-    console.error("[bot] failed to set webhook:", err.message);
+    console.error("[bot] setWebhook failed:", err.message);
     process.exit(1);
   }
 });
 
-// Graceful shutdown — remove the webhook so Telegram stops sending updates
-process.once("SIGINT",  async () => { await bot.telegram.deleteWebhook(); process.exit(0); });
-process.once("SIGTERM", async () => { await bot.telegram.deleteWebhook(); process.exit(0); });
+process.once("SIGINT",  () => bot.telegram.deleteWebhook().finally(() => process.exit(0)));
+process.once("SIGTERM", () => bot.telegram.deleteWebhook().finally(() => process.exit(0)));
