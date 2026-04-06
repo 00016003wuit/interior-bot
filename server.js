@@ -52,6 +52,15 @@ const T = {
     error:           (msg) => `❌ Something went wrong: ${msg}\n\nPlease try again.`,
     unknownStyle:    "Unknown style. Please send a photo again.",
     unknownRoom:     "Unknown room type. Please send a photo again.",
+    customizePrompt:
+      "💬 Want to customize further? Tell me what to change! For example:\n\n" +
+      "• 'Change curtains to white'\n" +
+      "• 'Make walls light blue'\n" +
+      "• 'Add wooden flooring'\n" +
+      "• 'Change furniture to white'\n\n" +
+      "Or send a new photo to start over. 📸",
+    customizeGenerating: (req) => `🔄 Applying: "${req}"\n\n⏳ Regenerating… 30–60 seconds.`,
+    customizeResult:     (remaining) => `✨ Here is your updated room!\nFree requests remaining: ${remaining}`,
   },
   ru: {
     selectLang:      "Пожалуйста, выберите язык:",
@@ -79,6 +88,15 @@ const T = {
     error:           (msg) => `❌ Что-то пошло не так: ${msg}\n\nПожалуйста, попробуйте ещё раз.`,
     unknownStyle:    "Неизвестный стиль. Пожалуйста, отправьте фото снова.",
     unknownRoom:     "Неизвестный тип комнаты. Пожалуйста, отправьте фото снова.",
+    customizePrompt:
+      "💬 Хотите изменить что-то ещё? Напишите, что поменять! Например:\n\n" +
+      "• 'Сделай шторы белыми'\n" +
+      "• 'Покрась стены в светло-голубой'\n" +
+      "• 'Добавь деревянный пол'\n" +
+      "• 'Замени мебель на белую'\n\n" +
+      "Или отправьте новое фото, чтобы начать заново. 📸",
+    customizeGenerating: (req) => `🔄 Применяю: "${req}"\n\n⏳ Генерирую… 30–60 секунд.`,
+    customizeResult:     (remaining) => `✨ Вот ваша обновлённая комната!\nОсталось бесплатных запросов: ${remaining}`,
   },
   uz: {
     selectLang:      "Iltimos, tilni tanlang:",
@@ -106,6 +124,15 @@ const T = {
     error:           (msg) => `❌ Xatolik yuz berdi: ${msg}\n\nIltimos, qayta urining.`,
     unknownStyle:    "Noma'lum uslub. Iltimos, rasmni qayta yuboring.",
     unknownRoom:     "Noma'lum xona turi. Iltimos, rasmni qayta yuboring.",
+    customizePrompt:
+      "💬 Yana o'zgartirmoqchimisiz? Nima o'zgartirishni yozing! Masalan:\n\n" +
+      "• 'Pardalarni oq qil'\n" +
+      "• 'Devorlarni och ko'k rang'\n" +
+      "• 'Yog'och pol qo'sh'\n" +
+      "• 'Mebelni oq rang'\n\n" +
+      "Yoki yangi rasm yuboring. 📸",
+    customizeGenerating: (req) => `🔄 Qo'llanmoqda: "${req}"\n\n⏳ Qayta yaratilmoqda… 30–60 soniya.`,
+    customizeResult:     (remaining) => `✨ Mana yangilangan xonangiz!\nQolgan bepul so'rovlar: ${remaining}`,
   },
 };
 
@@ -236,6 +263,26 @@ function clearPending(userId) {
   pendingPhotos.delete(userId);
 }
 
+// ── Last result store ─────────────────────────
+// After each generation, store the output URL + prompt so the user can
+// send a text customization request and we can regenerate from it.
+// Keyed by userId. Expires after 30 minutes of inactivity.
+const lastResults  = new Map(); // userId → { imageUrl, prompt, expiresAt }
+const RESULT_TTL   = 30 * 60 * 1000;
+
+function setLastResult(userId, imageUrl, prompt) {
+  lastResults.set(userId, { imageUrl, prompt, expiresAt: Date.now() + RESULT_TTL });
+}
+function getLastResult(userId) {
+  const entry = lastResults.get(userId);
+  if (!entry) return null;
+  if (Date.now() > entry.expiresAt) { lastResults.delete(userId); return null; }
+  return entry;
+}
+function clearLastResult(userId) {
+  lastResults.delete(userId);
+}
+
 // ── Usage tracking ────────────────────────────
 const USAGE_FILE = path.join(__dirname, "usage.json");
 
@@ -321,6 +368,7 @@ bot.on(message("photo"), async (ctx) => {
   const photos  = ctx.message.photo;
   const largest = photos[photos.length - 1];
   setPending(userId, largest.file_id);
+  clearLastResult(userId); // new photo = fresh session, discard previous customization chain
   console.log(`[photo] stored pending file_id=${largest.file_id} for user=${userId}`);
 
   await ctx.reply(t(userId).chooseRoom, { reply_markup: ROOM_KEYBOARD });
@@ -391,6 +439,9 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
+    // Store result so the user can send text customization requests
+    setLastResult(userId, imageUrl, fullPrompt);
+
     await ctx.replyWithPhoto(imageUrl, {
       caption: t(userId).result(style.label, remaining),
     });
@@ -404,17 +455,78 @@ bot.action(/^style:(.+)$/, async (ctx) => {
       },
     });
 
+    // Invite further customization via text
+    await ctx.reply(t(userId).customizePrompt);
+
   } catch (err) {
     console.error("[action] generation failed:", err.message);
     await ctx.reply(t(userId).error(err.message));
   }
 });
 
-// Plain text fallback
-bot.on(message("text"), (ctx) => {
-  if (!ctx.message.text.startsWith("/")) {
-    return ctx.reply(t(ctx.from.id).sendPhoto);
+// Plain text — either a customization request or a fallback prompt
+bot.on(message("text"), async (ctx) => {
+  const userId  = ctx.from.id;
+  const text    = ctx.message.text;
+
+  if (text.startsWith("/")) return; // handled by command handlers
+
+  // If the user has a recent result, treat their message as a customization request
+  const last = getLastResult(userId);
+  if (last) {
+    if (getUsage(userId) >= FREE_LIMIT) {
+      return ctx.reply(t(userId).limitReached);
+    }
+
+    const statusMsg = await ctx.reply(t(userId).customizeGenerating(text));
+
+    try {
+      // Combine the original style prompt with the user's specific change request
+      const refinedPrompt = `${last.prompt}, ${text}, preserve room structure`;
+      console.log(`[customize] user=${userId} request="${text}"`);
+
+      // Re-download the last generated image to use as the new input
+      const res = await fetch(last.imageUrl);
+      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+      const buf          = Buffer.from(await res.arrayBuffer());
+      const imageDataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
+
+      const newImageUrl = await generateDesign(imageDataUri, refinedPrompt);
+
+      const newCount  = incUsage(userId);
+      const remaining = Math.max(0, FREE_LIMIT - newCount);
+
+      // Update the stored result so the next customization builds on this one
+      setLastResult(userId, newImageUrl, refinedPrompt);
+
+      await ctx.replyWithPhoto(newImageUrl, {
+        caption: t(userId).customizeResult(remaining),
+      });
+
+      const encodedUrls = encodeURIComponent(JSON.stringify([newImageUrl]));
+      await ctx.reply(t(userId).gallery, {
+        reply_markup: {
+          inline_keyboard: [[
+            { text: t(userId).galleryBtn, web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
+          ]],
+        },
+      });
+
+      // Offer another round of customization
+      await ctx.reply(t(userId).customizePrompt);
+
+    } catch (err) {
+      console.error("[customize] failed:", err.message);
+      await ctx.reply(t(userId).error(err.message));
+    } finally {
+      ctx.telegram.deleteMessage(ctx.chat.id, statusMsg.message_id).catch(() => {});
+    }
+
+    return;
   }
+
+  // No recent result — prompt the user to send a photo first
+  return ctx.reply(t(userId).sendPhoto);
 });
 
 // ── Express ───────────────────────────────────
