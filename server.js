@@ -12,7 +12,7 @@ const TOKEN           = process.env.TELEGRAM_BOT_TOKEN;
 const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
 const WEBHOOK_URL     = process.env.WEBHOOK_URL;
 const PORT            = process.env.PORT || 3000;
-const APP_URL         = process.env.APP_URL || `http://localhost:${PORT}`;
+const APP_URL         = process.env.APP_URL || WEBHOOK_URL;
 const FREE_LIMIT      = 10;
 
 console.log("TELEGRAM_BOT_TOKEN :", TOKEN           ? TOKEN.slice(0, 8) + "..."  : "MISSING");
