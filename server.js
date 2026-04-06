@@ -270,8 +270,8 @@ function clearPending(userId) {
 const lastResults  = new Map(); // userId → { imageUrl, prompt, expiresAt }
 const RESULT_TTL   = 30 * 60 * 1000;
 
-function setLastResult(userId, imageUrl, prompt) {
-  lastResults.set(userId, { imageUrl, prompt, expiresAt: Date.now() + RESULT_TTL });
+function setLastResult(userId, imageUrl, prompt, imageDataUri) {
+  lastResults.set(userId, { imageUrl, prompt, imageDataUri, expiresAt: Date.now() + RESULT_TTL });
 }
 function getLastResult(userId) {
   const entry = lastResults.get(userId);
@@ -439,8 +439,8 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-    // Store result so the user can send text customization requests
-    setLastResult(userId, imageUrl, fullPrompt);
+    // Store result — keep the original imageDataUri so customizations re-use the room photo, not the AI output
+    setLastResult(userId, imageUrl, fullPrompt, imageDataUri);
 
     await ctx.replyWithPhoto(imageUrl, {
       caption: t(userId).result(style.label, remaining),
@@ -481,23 +481,18 @@ bot.on(message("text"), async (ctx) => {
     const statusMsg = await ctx.reply(t(userId).customizeGenerating(text));
 
     try {
-      // Combine the original style prompt with the user's specific change request
+      // Build combined prompt: original style + user's specific request
       const refinedPrompt = `${last.prompt}, ${text}, preserve room structure`;
       console.log(`[customize] user=${userId} request="${text}"`);
 
-      // Re-download the last generated image to use as the new input
-      const res = await fetch(last.imageUrl);
-      if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-      const buf          = Buffer.from(await res.arrayBuffer());
-      const imageDataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
-
-      const newImageUrl = await generateDesign(imageDataUri, refinedPrompt);
+      // Always use the ORIGINAL room photo (base64) as input, not the AI-generated output
+      const newImageUrl = await generateDesign(last.imageDataUri, refinedPrompt);
 
       const newCount  = incUsage(userId);
       const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-      // Update the stored result so the next customization builds on this one
-      setLastResult(userId, newImageUrl, refinedPrompt);
+      // Keep the original imageDataUri so further customizations still use the original photo
+      setLastResult(userId, newImageUrl, refinedPrompt, last.imageDataUri);
 
       await ctx.replyWithPhoto(newImageUrl, {
         caption: t(userId).customizeResult(remaining),
