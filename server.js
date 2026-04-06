@@ -194,7 +194,7 @@ const ROOM_KEYBOARD = {
 };
 
 // ── Style definitions ─────────────────────────
-const QUALITY = "8k resolution, ultra detailed, photorealistic, professional interior photography";
+const QUALITY = "8k uhd, ultra sharp, highly detailed, professional interior photography, sharp focus, high resolution";
 const BASE    = `preserve original room structure, same walls same windows same doors, only change interior decoration and furniture, do not add or remove architectural elements, ${QUALITY}`;
 
 const STYLES = {
@@ -311,9 +311,9 @@ async function generateDesign(imageDataUri, prompt) {
       input: {
         image:               imageDataUri,
         prompt,
-        negative_prompt:     "lowres, watermark, text, people, deformed, blurry, door, window, archway, opening, additional rooms, extra walls, structural changes, new architectural elements",
+        negative_prompt:     "lowres, watermark, text, people, deformed, blurry, low quality, pixelated, low resolution, jpeg artifacts, noise, grainy, door, window, archway, opening, additional rooms, extra walls, structural changes, new architectural elements",
         guidance_scale:      20,
-        prompt_strength:     0.45,
+        prompt_strength:     0.5,
         num_inference_steps: 100,
       },
     }
@@ -366,7 +366,9 @@ bot.on(message("photo"), async (ctx) => {
   }
 
   const photos  = ctx.message.photo;
+  // photos[] is sorted smallest→largest by Telegram; last item is always highest resolution
   const largest = photos[photos.length - 1];
+  console.log(`[photo] using highest res: ${largest.width}x${largest.height} (${largest.file_size ?? "?"}B)`);
   setPending(userId, largest.file_id);
   clearLastResult(userId); // new photo = fresh session, discard previous customization chain
   console.log(`[photo] stored pending file_id=${largest.file_id} for user=${userId}`);
