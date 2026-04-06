@@ -28,11 +28,22 @@ if (!WEBHOOK_URL)     { console.error("ERROR: WEBHOOK_URL not set");         pro
 const T = {
   en: {
     selectLang:      "Please choose your language:",
-    welcome:         "👋 Welcome to Interior AI Designer!\n\nSend me a photo of your room and I'll redesign it for you.\n\n✨ First 10 requests are free. After that: 1000 UZS per design.",
+    welcome:
+      "🏠 Welcome to Interior AI Designer!\n" +
+      "Transform any room into a stunning interior with AI.\n\n" +
+      "How it works:\n" +
+      "1️⃣ Send a photo of your room\n" +
+      "2️⃣ Choose your room type\n" +
+      "3️⃣ Pick a design style\n" +
+      "4️⃣ Get your AI redesign in seconds!\n\n" +
+      "✨ First 10 requests are FREE\n" +
+      "💳 After that: only 1,000 UZS per design\n\n" +
+      "Ready? Send me a photo to get started! 📸",
     sendPhoto:       "📸 Send me a photo of your room to get started!",
-    chooseStyle:     "Choose a style for your room redesign:",
-    generating:      (label) => `Style selected: ${label}\n\n⏳ Generating your redesign… this takes 30–60 seconds.`,
-    result:          (label, remaining) => `✨ Here is your redesigned room!\nStyle: ${label}\nFree requests remaining: ${remaining}`,
+    chooseRoom:      "What type of room is this?",
+    chooseStyle:     "Now choose a design style:",
+    generating:      (roomLabel, styleLabel) => `Room: ${roomLabel} · Style: ${styleLabel}\n\n⏳ Generating your redesign… this takes 30–60 seconds.`,
+    result:          (styleLabel, remaining) => `✨ Here is your redesigned room!\nStyle: ${styleLabel}\nFree requests remaining: ${remaining}`,
     gallery:         "🖼 View full-size in the gallery:",
     galleryBtn:      "🎨 Open Gallery",
     expired:         "⚠️ Your photo has expired (10 min limit). Please send it again.",
@@ -40,14 +51,26 @@ const T = {
     usage:           (used, remaining) => `Used: ${used} / ${FREE_LIMIT}\nFree remaining: ${remaining}`,
     error:           (msg) => `❌ Something went wrong: ${msg}\n\nPlease try again.`,
     unknownStyle:    "Unknown style. Please send a photo again.",
+    unknownRoom:     "Unknown room type. Please send a photo again.",
   },
   ru: {
     selectLang:      "Пожалуйста, выберите язык:",
-    welcome:         "👋 Добро пожаловать в Interior AI Designer!\n\nОтправьте мне фото вашей комнаты, и я перепроектирую её для вас.\n\n✨ Первые 10 запросов бесплатны. Далее: 1000 UZS за дизайн.",
+    welcome:
+      "🏠 Добро пожаловать в Interior AI Designer!\n" +
+      "Превратите любую комнату в стильный интерьер с помощью ИИ.\n\n" +
+      "Как это работает:\n" +
+      "1️⃣ Отправьте фото вашей комнаты\n" +
+      "2️⃣ Выберите тип комнаты\n" +
+      "3️⃣ Выберите стиль дизайна\n" +
+      "4️⃣ Получите редизайн за секунды!\n\n" +
+      "✨ Первые 10 запросов БЕСПЛАТНО\n" +
+      "💳 Далее: всего 1 000 UZS за дизайн\n\n" +
+      "Готовы? Отправьте фото! 📸",
     sendPhoto:       "📸 Отправьте мне фото вашей комнаты, чтобы начать!",
-    chooseStyle:     "Выберите стиль для редизайна комнаты:",
-    generating:      (label) => `Стиль выбран: ${label}\n\n⏳ Генерирую дизайн… это займёт 30–60 секунд.`,
-    result:          (label, remaining) => `✨ Вот ваша обновлённая комната!\nСтиль: ${label}\nОсталось бесплатных запросов: ${remaining}`,
+    chooseRoom:      "Какой тип комнаты на фото?",
+    chooseStyle:     "Теперь выберите стиль дизайна:",
+    generating:      (roomLabel, styleLabel) => `Комната: ${roomLabel} · Стиль: ${styleLabel}\n\n⏳ Генерирую дизайн… это займёт 30–60 секунд.`,
+    result:          (styleLabel, remaining) => `✨ Вот ваша обновлённая комната!\nСтиль: ${styleLabel}\nОсталось бесплатных запросов: ${remaining}`,
     gallery:         "🖼 Открыть в полном размере:",
     galleryBtn:      "🎨 Открыть галерею",
     expired:         "⚠️ Время ожидания вашего фото истекло (10 мин). Пожалуйста, отправьте фото снова.",
@@ -55,14 +78,26 @@ const T = {
     usage:           (used, remaining) => `Использовано: ${used} / ${FREE_LIMIT}\nОсталось бесплатных: ${remaining}`,
     error:           (msg) => `❌ Что-то пошло не так: ${msg}\n\nПожалуйста, попробуйте ещё раз.`,
     unknownStyle:    "Неизвестный стиль. Пожалуйста, отправьте фото снова.",
+    unknownRoom:     "Неизвестный тип комнаты. Пожалуйста, отправьте фото снова.",
   },
   uz: {
     selectLang:      "Iltimos, tilni tanlang:",
-    welcome:         "👋 Interior AI Designer'ga xush kelibsiz!\n\nMenga xonangizning rasmini yuboring, men uni qayta dizayn qilaman.\n\n✨ Birinchi 10 ta so'rov bepul. Keyin: har bir dizayn uchun 1000 UZS.",
+    welcome:
+      "🏠 Interior AI Designer'ga xush kelibsiz!\n" +
+      "Istalgan xonani AI yordamida ajoyib interyer'ga aylantiring.\n\n" +
+      "Qanday ishlaydi:\n" +
+      "1️⃣ Xonangizning rasmini yuboring\n" +
+      "2️⃣ Xona turini tanlang\n" +
+      "3️⃣ Dizayn uslubini tanlang\n" +
+      "4️⃣ Soniyalar ichida AI dizaynini oling!\n\n" +
+      "✨ Birinchi 10 ta so'rov BEPUL\n" +
+      "💳 Keyin: har bir dizayn uchun atigi 1 000 UZS\n\n" +
+      "Tayyor? Rasm yuboring! 📸",
     sendPhoto:       "📸 Boshlash uchun xonangizning rasmini yuboring!",
-    chooseStyle:     "Xonangiz uchun uslubni tanlang:",
-    generating:      (label) => `Uslub tanlandi: ${label}\n\n⏳ Dizayn yaratilmoqda… bu 30–60 soniya oladi.`,
-    result:          (label, remaining) => `✨ Mana sizning yangi xonangiz!\nUslub: ${label}\nQolgan bepul so'rovlar: ${remaining}`,
+    chooseRoom:      "Bu qanday xona turi?",
+    chooseStyle:     "Endi dizayn uslubini tanlang:",
+    generating:      (roomLabel, styleLabel) => `Xona: ${roomLabel} · Uslub: ${styleLabel}\n\n⏳ Dizayn yaratilmoqda… bu 30–60 soniya oladi.`,
+    result:          (styleLabel, remaining) => `✨ Mana sizning yangi xonangiz!\nUslub: ${styleLabel}\nQolgan bepul so'rovlar: ${remaining}`,
     gallery:         "🖼 To'liq o'lchamda ko'rish:",
     galleryBtn:      "🎨 Galereyani ochish",
     expired:         "⚠️ Rasmingiz vaqti tugadi (10 daqiqa). Iltimos, rasmni qayta yuboring.",
@@ -70,6 +105,7 @@ const T = {
     usage:           (used, remaining) => `Ishlatildi: ${used} / ${FREE_LIMIT}\nQoldi bepul: ${remaining}`,
     error:           (msg) => `❌ Xatolik yuz berdi: ${msg}\n\nIltimos, qayta urining.`,
     unknownStyle:    "Noma'lum uslub. Iltimos, rasmni qayta yuboring.",
+    unknownRoom:     "Noma'lum xona turi. Iltimos, rasmni qayta yuboring.",
   },
 };
 
@@ -103,8 +139,36 @@ function t(userId) {
   return T[getLang(userId)];
 }
 
+// ── Room type definitions ─────────────────────
+const ROOM_TYPES = {
+  living:  { label: "🛋️ Living Room",  prompt: "living room" },
+  bedroom: { label: "🛏️ Bedroom",      prompt: "bedroom" },
+  kitchen: { label: "🍳 Kitchen",       prompt: "kitchen" },
+  bathroom:{ label: "🛁 Bathroom",      prompt: "bathroom" },
+  office:  { label: "🏢 Office",        prompt: "home office" },
+  dining:  { label: "🍽️ Dining Room",  prompt: "dining room" },
+};
+
+const ROOM_KEYBOARD = {
+  inline_keyboard: [
+    [
+      { text: ROOM_TYPES.living.label,   callback_data: "room:living" },
+      { text: ROOM_TYPES.bedroom.label,  callback_data: "room:bedroom" },
+    ],
+    [
+      { text: ROOM_TYPES.kitchen.label,  callback_data: "room:kitchen" },
+      { text: ROOM_TYPES.bathroom.label, callback_data: "room:bathroom" },
+    ],
+    [
+      { text: ROOM_TYPES.office.label,   callback_data: "room:office" },
+      { text: ROOM_TYPES.dining.label,   callback_data: "room:dining" },
+    ],
+  ],
+};
+
 // ── Style definitions ─────────────────────────
-const BASE = "preserve original room structure, same walls same windows same doors, only change interior decoration and furniture, do not add or remove architectural elements, photorealistic, high quality";
+const QUALITY = "8k resolution, ultra detailed, photorealistic, professional interior photography";
+const BASE    = `preserve original room structure, same walls same windows same doors, only change interior decoration and furniture, do not add or remove architectural elements, ${QUALITY}`;
 
 const STYLES = {
   modern: {
@@ -151,17 +215,22 @@ const STYLE_KEYBOARD = {
 };
 
 // ── Pending photo store ───────────────────────
-const pendingPhotos = new Map(); // userId → { fileId, expiresAt }
+// Holds fileId + chosen roomType while user works through the two-step menu.
+const pendingPhotos = new Map(); // userId → { fileId, roomType, expiresAt }
 const PENDING_TTL   = 10 * 60 * 1000;
 
 function setPending(userId, fileId) {
-  pendingPhotos.set(userId, { fileId, expiresAt: Date.now() + PENDING_TTL });
+  pendingPhotos.set(userId, { fileId, roomType: null, expiresAt: Date.now() + PENDING_TTL });
 }
 function getPending(userId) {
   const entry = pendingPhotos.get(userId);
   if (!entry) return null;
   if (Date.now() > entry.expiresAt) { pendingPhotos.delete(userId); return null; }
-  return entry.fileId;
+  return entry;
+}
+function setRoomType(userId, roomType) {
+  const entry = pendingPhotos.get(userId);
+  if (entry) entry.roomType = roomType;
 }
 function clearPending(userId) {
   pendingPhotos.delete(userId);
@@ -196,9 +265,9 @@ async function generateDesign(imageDataUri, prompt) {
         image:               imageDataUri,
         prompt,
         negative_prompt:     "lowres, watermark, text, people, deformed, blurry, door, window, archway, opening, additional rooms, extra walls, structural changes, new architectural elements",
-        guidance_scale:      15,
+        guidance_scale:      20,
         prompt_strength:     0.45,
-        num_inference_steps: 75,
+        num_inference_steps: 100,
       },
     }
   );
@@ -241,7 +310,7 @@ bot.command("lang", (ctx) => {
   return ctx.reply(T.en.selectLang, { reply_markup: LANG_KEYBOARD });
 });
 
-// Photo received → check limit, store file_id, show style menu
+// Photo received → check limit, store file_id, show room type menu
 bot.on(message("photo"), async (ctx) => {
   const userId = ctx.from.id;
 
@@ -254,10 +323,34 @@ bot.on(message("photo"), async (ctx) => {
   setPending(userId, largest.file_id);
   console.log(`[photo] stored pending file_id=${largest.file_id} for user=${userId}`);
 
-  await ctx.reply(t(userId).chooseStyle, { reply_markup: STYLE_KEYBOARD });
+  await ctx.reply(t(userId).chooseRoom, { reply_markup: ROOM_KEYBOARD });
 });
 
-// Style button tapped → generate
+// Room type selected → store room type, show style menu
+bot.action(/^room:(.+)$/, async (ctx) => {
+  const roomKey = ctx.match[1];
+  const room    = ROOM_TYPES[roomKey];
+  const userId  = ctx.from.id;
+
+  await ctx.answerCbQuery();
+
+  if (!room) {
+    return ctx.reply(t(userId).unknownRoom);
+  }
+
+  const pending = getPending(userId);
+  if (!pending) {
+    return ctx.reply(t(userId).expired);
+  }
+
+  setRoomType(userId, roomKey);
+
+  await ctx.editMessageText(`${room.label} ✓\n\n${t(userId).chooseStyle}`, {
+    reply_markup: STYLE_KEYBOARD,
+  }).catch(() => ctx.reply(t(userId).chooseStyle, { reply_markup: STYLE_KEYBOARD }));
+});
+
+// Style selected → generate
 bot.action(/^style:(.+)$/, async (ctx) => {
   const styleKey = ctx.match[1];
   const style    = STYLES[styleKey];
@@ -269,15 +362,20 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     return ctx.reply(t(userId).unknownStyle);
   }
 
-  const fileId = getPending(userId);
-  if (!fileId) {
+  const pending = getPending(userId);
+  if (!pending) {
     return ctx.reply(t(userId).expired);
   }
 
+  const { fileId, roomType } = pending;
+  const room = ROOM_TYPES[roomType] || ROOM_TYPES.living; // fallback if somehow unset
   clearPending(userId);
 
-  await ctx.editMessageText(t(userId).generating(style.label))
-    .catch(() => ctx.reply(t(userId).generating(style.label)));
+  // Build a room-aware prompt: prepend the room type so the model knows the context
+  const fullPrompt = `${room.prompt}, ${style.prompt}`;
+
+  await ctx.editMessageText(t(userId).generating(room.label, style.label))
+    .catch(() => ctx.reply(t(userId).generating(room.label, style.label)));
 
   try {
     const fileLink = await ctx.telegram.getFileLink(fileId);
@@ -288,7 +386,7 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     console.log(`[action] downloaded ${buf.length} bytes`);
 
     const imageDataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
-    const imageUrl     = await generateDesign(imageDataUri, style.prompt);
+    const imageUrl     = await generateDesign(imageDataUri, fullPrompt);
 
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
