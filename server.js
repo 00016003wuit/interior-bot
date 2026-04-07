@@ -431,6 +431,7 @@ async function runEdit(imageUrl, prompt) {
       aspect_ratio:  "auto",
       output_format: "jpeg",
     },
+    timeout: 120000, // 120 seconds
   });
   const finalUrl = result.data.images[0].url;
   console.log(`[fal] done: ${finalUrl}`);
