@@ -627,6 +627,7 @@ bot.on(message("text"), async (ctx) => {
       const dlBuf = Buffer.from(await dlRes.arrayBuffer());
       console.log(`[customize] image download complete: ${dlBuf.length} bytes`);
       const freshUrl = await uploadImage(dlBuf);
+      console.log(`[customize] fal storage upload complete: ${freshUrl}`);
 
       const newGeneratedUrl = await runEdit(freshUrl, editPrompt);
 
