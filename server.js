@@ -612,7 +612,10 @@ bot.on(message("text"), async (ctx) => {
     const statusMsg = await ctx.reply(t(userId).customizeGenerating(text), { parse_mode: "MarkdownV2" });
 
     try {
-      // Targeted-edit prompt: describe only the specific change, preserve everything else
+      // Targeted-edit prompt: instruct the model to change ONLY the specific item the user
+      // mentioned (e.g. "make carpet white") and leave the entire rest of the room untouched.
+      // Leading with "Edit this interior design photo:" anchors the model to the existing image
+      // rather than letting it hallucinate a completely new scene.
       const editPrompt = `Edit this interior design photo: ${text}. Keep the exact same room layout, same furniture positions, same lighting. Only change the specific item mentioned. Maintain photorealistic quality. Do not change anything else.`;
 
       // Download the last generated image fresh, then re-upload to fal.ai storage
