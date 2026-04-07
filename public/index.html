@@ -2,391 +2,685 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Interior AI Designer</title>
-
-  <!-- Telegram Mini App SDK — required for all Mini Apps -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <style>
-    /* ── Reset & base ─────────────────────────────── */
+    /* ─── Reset ─────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ─── Design tokens ─────────────────────────── */
     :root {
-      --bg: #0f0f13;
-      --surface: #1a1a24;
-      --surface2: #22222f;
-      --accent: #7c5cfc;
-      --accent2: #a78bfa;
-      --text: #f0eeff;
-      --muted: #8880aa;
-      --border: #2e2e42;
-      --radius: 16px;
-      --card-shadow: 0 8px 32px rgba(124, 92, 252, 0.15);
+      --grad-a:   #7c3aed;
+      --grad-b:   #a855f7;
+      --grad-c:   #ec4899;
+      --accent:   #8b5cf6;
+      --accent2:  #c084fc;
+      --bg:       #09090f;
+      --surface:  #13131f;
+      --surface2: #1c1c2e;
+      --surface3: #252538;
+      --border:   #2e2e4a;
+      --text:     #f1f0ff;
+      --text2:    #a9a8cc;
+      --text3:    #6b6a8a;
+      --radius:   18px;
+      --radius-s: 12px;
+      --shadow:   0 8px 40px rgba(124, 58, 237, 0.18);
+      --shadow-s: 0 4px 20px rgba(0, 0, 0, 0.4);
     }
 
-    /* Use Telegram theme colors when available */
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--tg-theme-bg-color, var(--bg));
-      color: var(--tg-theme-text-color, var(--text));
-      min-height: 100vh;
-      padding-bottom: 40px;
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI",
+                   Roboto, "Helvetica Neue", sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
     }
 
-    /* ── Header ───────────────────────────────────── */
-    .header {
-      background: linear-gradient(135deg, #1a0a3c 0%, #0f0f23 60%, #1a1030 100%);
-      padding: 32px 20px 24px;
-      text-align: center;
-      border-bottom: 1px solid var(--border);
+    /* ─── Hero header ───────────────────────────── */
+    .hero {
       position: relative;
       overflow: hidden;
+      padding: 48px 20px 36px;
+      text-align: center;
+      background: linear-gradient(160deg, #1a0a3c 0%, #0f0a24 50%, #180d30 100%);
     }
-    .header::before {
+    .hero::before {
       content: "";
       position: absolute;
-      top: -40px; left: 50%;
-      transform: translateX(-50%);
-      width: 300px; height: 300px;
-      background: radial-gradient(circle, rgba(124,92,252,0.25) 0%, transparent 70%);
+      inset: -60px;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%,
+        rgba(124, 58, 237, 0.35) 0%, transparent 70%);
       pointer-events: none;
     }
-    .header-icon {
-      font-size: 48px;
-      margin-bottom: 12px;
+    .hero::after {
+      content: "";
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139, 92, 246, 0.5), transparent);
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 100px;
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--accent2);
+      margin-bottom: 18px;
+    }
+    .hero-icon {
+      font-size: 56px;
       display: block;
+      margin-bottom: 14px;
+      filter: drop-shadow(0 0 20px rgba(139, 92, 246, 0.5));
+      animation: float 4s ease-in-out infinite;
     }
-    .header h1 {
-      font-size: 22px;
-      font-weight: 700;
-      letter-spacing: -0.3px;
-      color: #fff;
+    @keyframes float {
+      0%, 100% { transform: translateY(0);    }
+      50%       { transform: translateY(-6px); }
     }
-    .header p {
-      font-size: 13px;
-      color: var(--muted);
-      margin-top: 6px;
+    .hero h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+    .hero p {
+      font-size: 14px;
+      color: var(--text2);
+      line-height: 1.5;
     }
 
-    /* ── Loading state ────────────────────────────── */
+    /* ─── Main content ───────────────────────────── */
+    .main { padding: 24px 16px 60px; }
+
+    /* ─── Section header ────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+    .section-line {
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ─── Loading ────────────────────────────────── */
     #loading {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
+      gap: 18px;
       padding: 80px 20px;
-      gap: 20px;
     }
-    .spinner {
-      width: 52px; height: 52px;
+    .spinner-ring {
+      width: 56px; height: 56px;
+      border-radius: 50%;
       border: 3px solid var(--border);
       border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+      animation: spin 0.75s linear infinite;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    #loading p {
-      color: var(--muted);
-      font-size: 14px;
-    }
+    #loading p { font-size: 14px; color: var(--text2); }
 
-    /* ── Empty / no images state ──────────────────── */
+    /* ─── Empty state ────────────────────────────── */
     #empty {
       display: none;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 80px 20px;
       text-align: center;
-      gap: 16px;
+      padding: 60px 20px;
+      gap: 14px;
     }
-    #empty .empty-icon { font-size: 64px; }
-    #empty h2 { font-size: 18px; font-weight: 600; }
-    #empty p  { font-size: 14px; color: var(--muted); max-width: 260px; }
+    .empty-glow {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.2), transparent 70%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 48px;
+      margin-bottom: 4px;
+    }
+    #empty h2 { font-size: 20px; font-weight: 700; }
+    #empty p  { font-size: 14px; color: var(--text2); max-width: 260px; line-height: 1.6; }
 
-    /* ── Gallery ──────────────────────────────────── */
-    #gallery {
-      display: none;
-      padding: 24px 16px;
-    }
-    .gallery-label {
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--muted);
-      margin-bottom: 16px;
-    }
+    /* ─── Before/After Comparison Slider ────────── */
+    #comparison-section { display: none; margin-bottom: 28px; }
 
-    /* Design cards */
-    .designs-grid {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-    .design-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
+    .comparison-wrap {
+      position: relative;
       border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: var(--card-shadow);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      cursor: col-resize;
+      user-select: none;
     }
-    .design-card:active { transform: scale(0.98); }
+    .comparison-wrap img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+    }
+    .img-after {
+      position: absolute;
+      inset: 0;
+      clip-path: inset(0 50% 0 0);
+    }
+    .slider-handle {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: #fff;
+      box-shadow: 0 0 12px rgba(255,255,255,0.6);
+      transform: translateX(-50%);
+      pointer-events: none;
+      transition: none;
+    }
+    .slider-knob {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    .comparison-labels {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 14px 0;
+    }
+    .comp-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .comp-label.before { color: var(--text3); }
+    .comp-label.after  { color: var(--accent2); }
 
-    .card-header {
+    /* ─── Generated image card ───────────────────── */
+    #result-section { display: none; margin-bottom: 28px; }
+
+    .result-card {
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .result-card-header {
+      padding: 14px 16px 12px;
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
     }
-    .card-badge {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+    .result-pill {
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
       color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 3px 10px;
-      border-radius: 20px;
-      letter-spacing: 0.5px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 100px;
     }
-    .card-title {
+    .result-style-name {
       font-size: 14px;
       font-weight: 600;
+      color: var(--text);
     }
 
-    .card-image-wrap {
+    .result-image-wrap {
       position: relative;
       background: var(--surface2);
     }
-    .card-image-wrap img {
+    .result-image-wrap img {
       width: 100%;
-      aspect-ratio: 4 / 3;
+      aspect-ratio: 4/3;
       object-fit: cover;
       display: block;
-      transition: opacity 0.3s;
     }
-    .card-image-wrap img.loading-img { opacity: 0; }
-    .card-image-wrap img.loaded      { opacity: 1; }
-
-    /* Skeleton shimmer while image loads */
     .img-skeleton {
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+      background: linear-gradient(90deg,
+        var(--surface) 0%, var(--surface3) 40%,
+        var(--surface) 80%);
       background-size: 200% 100%;
-      animation: shimmer 1.4s infinite;
+      animation: shimmer 1.5s ease-in-out infinite;
     }
     @keyframes shimmer { to { background-position: -200% 0; } }
-    .img-skeleton.hidden { display: none; }
 
-    .card-footer {
-      display: flex;
-      gap: 8px;
-      padding: 12px 16px;
+    .result-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding: 14px 16px;
     }
     .btn {
-      flex: 1;
-      padding: 10px;
+      padding: 12px 10px;
       border: none;
-      border-radius: 10px;
+      border-radius: var(--radius-s);
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: transform 0.1s, opacity 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
     }
-    .btn:active { transform: scale(0.97); opacity: 0.85; }
+    .btn:active { transform: scale(0.96); opacity: 0.85; }
     .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      background: linear-gradient(135deg, var(--grad-a), var(--grad-b));
       color: #fff;
+      box-shadow: 0 4px 16px rgba(124, 58, 237, 0.35);
     }
-    .btn-secondary {
-      background: var(--surface2);
+    .btn-ghost {
+      background: var(--surface3);
       color: var(--text);
       border: 1px solid var(--border);
     }
 
-    /* ── Divider ──────────────────────────────────── */
-    .divider {
-      height: 1px;
-      background: var(--border);
-      margin: 4px 0 20px;
-    }
+    /* ─── Style chips ────────────────────────────── */
+    #styles-section { display: none; margin-bottom: 28px; }
 
-    /* ── Footer note ──────────────────────────────── */
-    .footer-note {
+    .styles-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .style-chip {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 10px 8px;
       text-align: center;
+      cursor: default;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .style-chip.active {
+      background: rgba(139, 92, 246, 0.15);
+      border-color: var(--accent);
+    }
+    .style-chip-emoji { font-size: 20px; display: block; margin-bottom: 4px; }
+    .style-chip-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text2);
+      line-height: 1.3;
+      display: block;
+    }
+    .style-chip.active .style-chip-label { color: var(--accent2); }
+
+    /* ─── Info strip ─────────────────────────────── */
+    .info-strip {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .info-card {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 14px 12px;
+      text-align: center;
+    }
+    .info-card-emoji { font-size: 22px; display: block; margin-bottom: 6px; }
+    .info-card-label {
+      font-size: 11px;
+      color: var(--text2);
+      line-height: 1.4;
+    }
+    .info-card-label strong { color: var(--text); display: block; font-size: 13px; }
+
+    /* ─── Footer ─────────────────────────────────── */
+    .footer {
+      text-align: center;
+      padding: 0 20px 20px;
       font-size: 12px;
-      color: var(--muted);
-      padding: 0 20px;
-      margin-top: 8px;
+      color: var(--text3);
+    }
+    .footer a { color: var(--accent2); text-decoration: none; }
+
+    /* ─── Responsive tweak for wider screens ─────── */
+    @media (min-width: 480px) {
+      .main { max-width: 480px; margin: 0 auto; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="header">
-    <span class="header-icon">🏠</span>
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">✨ AI Powered</div>
+    <span class="hero-icon">🏠</span>
     <h1>Interior AI Designer</h1>
-    <p>Your AI-generated room redesigns</p>
+    <p>Transform your room with the power of AI</p>
   </div>
 
-  <!-- Loading spinner (shown while parsing URL params) -->
-  <div id="loading">
-    <div class="spinner"></div>
-    <p>Loading your designs…</p>
-  </div>
+  <!-- Main -->
+  <div class="main">
 
-  <!-- Empty state (no images provided) -->
-  <div id="empty">
-    <span class="empty-icon">📸</span>
-    <h2>No designs yet</h2>
-    <p>Send a photo of your room to the bot to generate 3 AI redesigns.</p>
-  </div>
-
-  <!-- Gallery (shown when images are available) -->
-  <div id="gallery">
-    <div class="gallery-label">3 Redesigned Versions</div>
-    <div class="divider"></div>
-    <div class="designs-grid" id="designs-grid">
-      <!-- Cards injected by JS -->
+    <!-- Loading -->
+    <div id="loading">
+      <div class="spinner-ring"></div>
+      <p>Loading your design…</p>
     </div>
-  </div>
 
-  <div class="footer-note" id="footer-note" style="display:none;">
-    Tap a design to view full-size • Share to save
+    <!-- Empty state -->
+    <div id="empty">
+      <div class="empty-glow">📸</div>
+      <h2>No design yet</h2>
+      <p>Send a photo of your room to the bot and pick a style to generate your AI redesign.</p>
+    </div>
+
+    <!-- Before/After slider -->
+    <div id="comparison-section">
+      <div class="section-header">
+        <span class="section-title">Before / After</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="comparison-wrap" id="comparison-wrap">
+        <img id="img-before" src="" alt="Before" />
+        <img id="img-after"  src="" alt="After" class="img-after" />
+        <div class="slider-handle" id="slider-handle">
+          <div class="slider-knob">⇔</div>
+        </div>
+      </div>
+      <div class="comparison-labels">
+        <span class="comp-label before">⬅ Original</span>
+        <span class="comp-label after">AI Design ➡</span>
+      </div>
+    </div>
+
+    <!-- Result card -->
+    <div id="result-section">
+      <div class="section-header">
+        <span class="section-title">🎨 Your Design</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="result-card">
+        <div class="result-card-header">
+          <span class="result-pill">AI Generated</span>
+          <span class="result-style-name" id="result-style-name">—</span>
+        </div>
+        <div class="result-image-wrap">
+          <div class="img-skeleton" id="result-skeleton"></div>
+          <img id="result-img" src="" alt="AI Design"
+               style="opacity:0;transition:opacity 0.4s;"
+               onload="onResultLoaded()" />
+        </div>
+        <div class="result-actions">
+          <button class="btn btn-primary" id="btn-fullsize" onclick="openFullSize()">
+            🔍 Full Size
+          </button>
+          <button class="btn btn-ghost" id="btn-share" onclick="shareImage()">
+            📤 Share
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Style grid (shows active style) -->
+    <div id="styles-section">
+      <div class="section-header">
+        <span class="section-title">🎨 Design Styles</span>
+        <div class="section-line"></div>
+      </div>
+      <div class="styles-grid" id="styles-grid"></div>
+    </div>
+
+    <!-- Info strip -->
+    <div class="info-strip">
+      <div class="info-card">
+        <span class="info-card-emoji">✨</span>
+        <div class="info-card-label">
+          <strong>3 FREE</strong>
+          First designs
+        </div>
+      </div>
+      <div class="info-card">
+        <span class="info-card-emoji">💳</span>
+        <div class="info-card-label">
+          <strong>10,000 UZS</strong>
+          Next 3 images
+        </div>
+      </div>
+      <div class="info-card">
+        <span class="info-card-emoji">⚡</span>
+        <div class="info-card-label">
+          <strong>30–60 sec</strong>
+          Generation time
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+
+  <div class="footer">
+    Powered by <a href="#">Interior AI Designer</a> 🏠
   </div>
 
   <script>
     // ── Telegram Mini App init ─────────────────────
     const tg = window.Telegram?.WebApp;
     if (tg) {
-      tg.ready();                        // Tell Telegram the app is ready
-      tg.expand();                       // Expand to full height
+      tg.ready();
+      tg.expand();
       tg.BackButton.show();
       tg.BackButton.onClick(() => tg.close());
 
-      // Apply Telegram theme to CSS variables
+      // Light theme overrides
       if (tg.colorScheme === "light") {
-        document.documentElement.style.setProperty("--bg",      tg.themeParams.bg_color       || "#fff");
-        document.documentElement.style.setProperty("--surface", tg.themeParams.secondary_bg_color || "#f2f2f7");
-        document.documentElement.style.setProperty("--text",    tg.themeParams.text_color     || "#000");
-        document.documentElement.style.setProperty("--muted",   tg.themeParams.hint_color     || "#888");
-        document.documentElement.style.setProperty("--border",  "#e0e0e8");
-        document.documentElement.style.setProperty("--surface2","#e8e8f0");
+        const r = document.documentElement.style;
+        r.setProperty("--bg",       "#f0f0f8");
+        r.setProperty("--surface",  "#ffffff");
+        r.setProperty("--surface2", "#f2f2fa");
+        r.setProperty("--surface3", "#e8e8f5");
+        r.setProperty("--border",   "#d0d0e8");
+        r.setProperty("--text",     "#111122");
+        r.setProperty("--text2",    "#555577");
+        r.setProperty("--text3",    "#8888aa");
       }
     }
 
-    // ── Parse image URLs from query string ────────
-    // The bot appends ?images=[...] when opening the Mini App
-    function getImagesFromUrl() {
+    // ── All 21 styles (must match server.js keys) ──
+    const STYLES_META = [
+      { key: "modern",        emoji: "🏙️", label: "Modern"            },
+      { key: "contemporary",  emoji: "🏛️", label: "Contemporary"      },
+      { key: "minimalist",    emoji: "✨",  label: "Minimalist"        },
+      { key: "traditional",   emoji: "🏺",  label: "Traditional"       },
+      { key: "transitional",  emoji: "🔄",  label: "Transitional"      },
+      { key: "scandinavian",  emoji: "🌿",  label: "Scandinavian"      },
+      { key: "japandi",       emoji: "🎋",  label: "Japandi"           },
+      { key: "bohemian",      emoji: "🌸",  label: "Bohemian"          },
+      { key: "rustic",        emoji: "🪵",  label: "Rustic"            },
+      { key: "farmhouse",     emoji: "🌾",  label: "Farmhouse"         },
+      { key: "industrial",    emoji: "⚙️",  label: "Industrial"        },
+      { key: "loft",          emoji: "🏗️",  label: "Loft"              },
+      { key: "midcentury",    emoji: "🕰️",  label: "Mid-Century"       },
+      { key: "artdeco",       emoji: "💎",  label: "Art Deco"          },
+      { key: "hollywoodglam", emoji: "⭐",  label: "Hollywood Glam"    },
+      { key: "mediterranean", emoji: "🌊",  label: "Mediterranean"     },
+      { key: "moroccan",      emoji: "🕌",  label: "Moroccan"          },
+      { key: "asianzen",      emoji: "🍃",  label: "Asian Zen"         },
+      { key: "eclectic",      emoji: "🎨",  label: "Eclectic"          },
+      { key: "maximalist",    emoji: "🌈",  label: "Maximalist"        },
+      { key: "biophilic",     emoji: "🌱",  label: "Biophilic"         },
+    ];
+
+    // ── Parse data from URL ───────────────────────
+    function parseData() {
       try {
+        // Try new ?data= format first
         const params = new URLSearchParams(window.location.search);
-        const raw = params.get("images");
-        if (!raw) return [];
-        return JSON.parse(decodeURIComponent(raw));
-      } catch {
-        return [];
-      }
+        const raw = params.get("data");
+        if (raw) return JSON.parse(decodeURIComponent(raw));
+
+        // Legacy ?images= format
+        const imgs = params.get("images");
+        if (imgs) {
+          const urls = JSON.parse(decodeURIComponent(imgs));
+          return { generated: urls[0] || null, original: null, style: null };
+        }
+      } catch {}
+      return null;
     }
 
-    // ── Build a design card ────────────────────────
-    function createDesignCard(imageUrl, index) {
-      const styleNames = ["Modern Minimal", "Cozy Scandinavian", "Bold Contemporary"];
-      const style = styleNames[index] || `Design ${index + 1}`;
-
-      const card = document.createElement("div");
-      card.className = "design-card";
-
-      card.innerHTML = `
-        <div class="card-header">
-          <span class="card-badge">Version ${index + 1}</span>
-          <span class="card-title">${style}</span>
-        </div>
-        <div class="card-image-wrap">
-          <div class="img-skeleton" id="skel-${index}"></div>
-          <img
-            id="img-${index}"
-            class="loading-img"
-            alt="${style}"
-            src="${imageUrl}"
-          />
-        </div>
-        <div class="card-footer">
-          <button class="btn btn-primary" onclick="viewFullSize('${imageUrl}')">🔍 Full Size</button>
-          <button class="btn btn-secondary" onclick="shareImage('${imageUrl}', ${index + 1})">📤 Share</button>
-        </div>
-      `;
-
-      // Once image loads, hide skeleton and fade in image
-      const img = card.querySelector(`#img-${index}`);
-      const skel = card.querySelector(`#skel-${index}`);
-      img.addEventListener("load", () => {
-        skel.classList.add("hidden");
-        img.classList.remove("loading-img");
-        img.classList.add("loaded");
+    // ── Build style chips grid ─────────────────────
+    function buildStyleGrid(activeKey) {
+      const grid = document.getElementById("styles-grid");
+      grid.innerHTML = "";
+      STYLES_META.forEach(({ key, emoji, label }) => {
+        const chip = document.createElement("div");
+        chip.className = "style-chip" + (key === activeKey ? " active" : "");
+        chip.innerHTML =
+          `<span class="style-chip-emoji">${emoji}</span>` +
+          `<span class="style-chip-label">${label}</span>`;
+        grid.appendChild(chip);
       });
-      img.addEventListener("error", () => {
-        skel.classList.add("hidden");
-        img.classList.remove("loading-img");
-        img.classList.add("loaded");
-        img.style.objectFit = "contain";
-        img.style.padding = "20px";
-        img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 60'%3E%3Crect width='100' height='60' fill='%231a1a24'/%3E%3Ctext x='50' y='35' text-anchor='middle' fill='%238880aa' font-size='12'%3EImage unavailable%3C/text%3E%3C/svg%3E";
-      });
-
-      return card;
+      document.getElementById("styles-section").style.display = "block";
     }
 
-    // ── Open image full size in browser / Telegram ─
-    function viewFullSize(url) {
-      if (tg) {
-        // Telegram's openLink opens external URLs inside the app
-        tg.openLink(url);
-      } else {
-        window.open(url, "_blank");
+    // ── Extract active style key from style label ──
+    function findStyleKey(label) {
+      if (!label) return null;
+      const lower = label.toLowerCase();
+      const found = STYLES_META.find(s =>
+        lower.includes(s.key) || lower.includes(s.label.toLowerCase())
+      );
+      return found ? found.key : null;
+    }
+
+    // ── Before/After slider logic ─────────────────
+    function initSlider(beforeSrc, afterSrc) {
+      const wrap   = document.getElementById("comparison-wrap");
+      const before = document.getElementById("img-before");
+      const after  = document.getElementById("img-after");
+      const handle = document.getElementById("slider-handle");
+
+      before.src = beforeSrc;
+      after.src  = afterSrc;
+
+      let dragging = false;
+
+      function setPosition(clientX) {
+        const rect = wrap.getBoundingClientRect();
+        let pct = (clientX - rect.left) / rect.width;
+        pct = Math.min(Math.max(pct, 0.03), 0.97);
+        const pctRight = (1 - pct) * 100;
+        after.style.clipPath = `inset(0 ${pctRight}% 0 0)`;
+        handle.style.left    = `${pct * 100}%`;
       }
+
+      // Touch
+      wrap.addEventListener("touchstart",  (e) => { dragging = true; setPosition(e.touches[0].clientX); });
+      wrap.addEventListener("touchmove",   (e) => { if (dragging) { e.preventDefault(); setPosition(e.touches[0].clientX); } }, { passive: false });
+      wrap.addEventListener("touchend",    ()  => { dragging = false; });
+
+      // Mouse
+      wrap.addEventListener("mousedown",   (e) => { dragging = true; setPosition(e.clientX); });
+      wrap.addEventListener("mousemove",   (e) => { if (dragging) setPosition(e.clientX); });
+      wrap.addEventListener("mouseup",     ()  => { dragging = false; });
+      wrap.addEventListener("mouseleave",  ()  => { dragging = false; });
+
+      document.getElementById("comparison-section").style.display = "block";
     }
 
-    // ── Share / download ───────────────────────────
-    function shareImage(url, number) {
+    // ── Image result card ─────────────────────────
+    let _generatedUrl = null;
+    let _styleLabel   = null;
+
+    function showResult(generatedUrl, styleName) {
+      _generatedUrl = generatedUrl;
+      _styleLabel   = styleName || "AI Design";
+
+      document.getElementById("result-style-name").textContent = _styleLabel;
+      const img = document.getElementById("result-img");
+      img.src = generatedUrl;
+      document.getElementById("result-section").style.display = "block";
+    }
+
+    function onResultLoaded() {
+      document.getElementById("result-skeleton").style.display = "none";
+      document.getElementById("result-img").style.opacity = "1";
+    }
+
+    function openFullSize() {
+      if (!_generatedUrl) return;
+      if (tg) tg.openLink(_generatedUrl);
+      else window.open(_generatedUrl, "_blank");
+    }
+
+    function shareImage() {
+      if (!_generatedUrl) return;
       if (navigator.share) {
         navigator.share({
-          title: `My AI Interior Design #${number}`,
-          text: "Check out this AI-redesigned room!",
-          url: url,
-        }).catch(() => {});
+          title: `AI Interior Design — ${_styleLabel}`,
+          text:  "Check out my AI-redesigned room! 🏠✨",
+          url:   _generatedUrl,
+        }).catch(() => openFullSize());
       } else {
-        // Fallback: open in new tab so user can long-press to save
-        viewFullSize(url);
+        openFullSize();
       }
     }
 
-    // ── Main render logic ──────────────────────────
+    // ── Main render ───────────────────────────────
     function render() {
-      const images = getImagesFromUrl();
+      const data = parseData();
 
       document.getElementById("loading").style.display = "none";
 
-      if (!images.length) {
-        // No images — show empty state
+      if (!data || !data.generated) {
         document.getElementById("empty").style.display = "flex";
         return;
       }
 
-      // Show gallery
-      const gallery = document.getElementById("gallery");
-      const grid    = document.getElementById("designs-grid");
-      gallery.style.display = "block";
-      document.getElementById("footer-note").style.display = "block";
+      // Result card
+      showResult(data.generated, data.style);
 
-      images.forEach((url, i) => {
-        grid.appendChild(createDesignCard(url, i));
-      });
+      // Before/After slider (only if we have both URLs)
+      if (data.original && data.original !== data.generated) {
+        initSlider(data.original, data.generated);
+      }
+
+      // Style chips
+      const activeKey = findStyleKey(data.style);
+      buildStyleGrid(activeKey);
     }
 
-    // Run on page load
     render();
   </script>
 </body>
