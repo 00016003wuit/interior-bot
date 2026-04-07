@@ -71,7 +71,7 @@ const T = {
       "• \"Add herringbone wooden flooring\"\n\n" +
       "Or send a new photo to start over\\. 📸",
     customizeGenerating: (req) =>
-      `🔄 Applying: *"${req}"*\n\n⏳ Generating your updated design\\.\\.\\.`,
+      `🔄 Applying change: *"${req}"*\n\n⏳ Editing your design \\— only changing what you asked for\\. This takes about 30–60 seconds\\.`,
     customizeResult: (remaining) =>
       `✨ Here is your updated design\\!\n🆓 Free designs remaining: *${remaining}*`,
   },
@@ -119,7 +119,7 @@ const T = {
       "• «Добавь паркет»\n\n" +
       "Или отправьте новое фото, чтобы начать заново\\. 📸",
     customizeGenerating: (req) =>
-      `🔄 Применяю: *«${req}»*\n\n⏳ Генерирую обновлённый дизайн\\.\\.\\.`,
+      `🔄 Применяю изменение: *«${req}»*\n\n⏳ Редактирую только то, что вы указали\\. Около 30–60 секунд\\.`,
     customizeResult: (remaining) =>
       `✨ Вот ваш обновлённый дизайн\\!\n🆓 Осталось бесплатных: *${remaining}*`,
   },
@@ -167,7 +167,7 @@ const T = {
       "• «Yog'och parket qo'sh»\n\n" +
       "Yoki yangi rasm yuboring\\. 📸",
     customizeGenerating: (req) =>
-      `🔄 Qo'llanmoqda: *«${req}»*\n\n⏳ Yangi dizayn yaratilmoqda\\.\\.\\.`,
+      `🔄 O'zgartirish qo'llanmoqda: *«${req}»*\n\n⏳ Faqat so'ralgan narsa o'zgartirmoqda\\. 30–60 soniya\\.`,
     customizeResult: (remaining) =>
       `✨ Mana yangilangan dizayningiz\\!\n🆓 Qolgan bepul: *${remaining}*`,
   },
