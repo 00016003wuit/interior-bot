@@ -641,8 +641,10 @@ bot.on(message("text"), async (ctx) => {
       // Preserve originalImageUrl; update generatedImageUrl for next round
       setLastResult(userId, last.originalImageUrl, newGeneratedUrl, customizePrompt);
 
+      // Escape user text for MarkdownV2 so special chars don't break formatting
+      const safeText = text.replace(/([_*[\]()~`>#+\-=|{}.!\\])/g, "\\$1");
       await ctx.replyWithPhoto(newGeneratedUrl, {
-        caption:    t(userId).customizeResult(remaining),
+        caption:    `${t(userId).customizeResult(remaining)}\n✏️ Change applied: _${safeText}_`,
         parse_mode: "MarkdownV2",
       });
 
