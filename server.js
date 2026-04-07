@@ -42,7 +42,7 @@ const T = {
     sendPhoto:       "📸 Send me a photo of your room to get started!",
     chooseRoom:      "What type of room is this?",
     chooseStyle:     "Now choose a design style:",
-    generating:      (roomLabel, styleLabel) => `Room: ${roomLabel} · Style: ${styleLabel}\n\n⏳ Generating your redesign… this takes 30–60 seconds.`,
+    generating:      (roomLabel, styleLabel) => `Room: ${roomLabel} · Style: ${styleLabel}\n\n⏳ Generating your design... this may take 60–90 seconds.`,
     result:          (styleLabel, remaining) => `✨ Here is your redesigned room!\nStyle: ${styleLabel}\nFree requests remaining: ${remaining}`,
     gallery:         "🖼 View full-size in the gallery:",
     galleryBtn:      "🎨 Open Gallery",
@@ -59,7 +59,7 @@ const T = {
       "• 'Add wooden flooring'\n" +
       "• 'Change furniture to white'\n\n" +
       "Or send a new photo to start over. 📸",
-    customizeGenerating: (req) => `🔄 Applying: "${req}"\n\n⏳ Regenerating… 30–60 seconds.`,
+    customizeGenerating: (req) => `🔄 Applying: "${req}"\n\n⏳ Generating your design... this may take 60–90 seconds.`,
     customizeResult:     (remaining) => `✨ Here is your updated room!\nFree requests remaining: ${remaining}`,
   },
   ru: {
@@ -78,7 +78,7 @@ const T = {
     sendPhoto:       "📸 Отправьте мне фото вашей комнаты, чтобы начать!",
     chooseRoom:      "Какой тип комнаты на фото?",
     chooseStyle:     "Теперь выберите стиль дизайна:",
-    generating:      (roomLabel, styleLabel) => `Комната: ${roomLabel} · Стиль: ${styleLabel}\n\n⏳ Генерирую дизайн… это займёт 30–60 секунд.`,
+    generating:      (roomLabel, styleLabel) => `Комната: ${roomLabel} · Стиль: ${styleLabel}\n\n⏳ Генерирую дизайн... это займёт 60–90 секунд.`,
     result:          (styleLabel, remaining) => `✨ Вот ваша обновлённая комната!\nСтиль: ${styleLabel}\nОсталось бесплатных запросов: ${remaining}`,
     gallery:         "🖼 Открыть в полном размере:",
     galleryBtn:      "🎨 Открыть галерею",
@@ -95,7 +95,7 @@ const T = {
       "• 'Добавь деревянный пол'\n" +
       "• 'Замени мебель на белую'\n\n" +
       "Или отправьте новое фото, чтобы начать заново. 📸",
-    customizeGenerating: (req) => `🔄 Применяю: "${req}"\n\n⏳ Генерирую… 30–60 секунд.`,
+    customizeGenerating: (req) => `🔄 Применяю: "${req}"\n\n⏳ Генерирую дизайн... это займёт 60–90 секунд.`,
     customizeResult:     (remaining) => `✨ Вот ваша обновлённая комната!\nОсталось бесплатных запросов: ${remaining}`,
   },
   uz: {
@@ -114,7 +114,7 @@ const T = {
     sendPhoto:       "📸 Boshlash uchun xonangizning rasmini yuboring!",
     chooseRoom:      "Bu qanday xona turi?",
     chooseStyle:     "Endi dizayn uslubini tanlang:",
-    generating:      (roomLabel, styleLabel) => `Xona: ${roomLabel} · Uslub: ${styleLabel}\n\n⏳ Dizayn yaratilmoqda… bu 30–60 soniya oladi.`,
+    generating:      (roomLabel, styleLabel) => `Xona: ${roomLabel} · Uslub: ${styleLabel}\n\n⏳ Dizayn yaratilmoqda... bu 60–90 soniya oladi.`,
     result:          (styleLabel, remaining) => `✨ Mana sizning yangi xonangiz!\nUslub: ${styleLabel}\nQolgan bepul so'rovlar: ${remaining}`,
     gallery:         "🖼 To'liq o'lchamda ko'rish:",
     galleryBtn:      "🎨 Galereyani ochish",
@@ -131,7 +131,7 @@ const T = {
       "• 'Yog'och pol qo'sh'\n" +
       "• 'Mebelni oq rang'\n\n" +
       "Yoki yangi rasm yuboring. 📸",
-    customizeGenerating: (req) => `🔄 Qo'llanmoqda: "${req}"\n\n⏳ Qayta yaratilmoqda… 30–60 soniya.`,
+    customizeGenerating: (req) => `🔄 Qo'llanmoqda: "${req}"\n\n⏳ Dizayn yaratilmoqda... bu 60–90 soniya oladi.`,
     customizeResult:     (remaining) => `✨ Mana yangilangan xonangiz!\nQolgan bepul so'rovlar: ${remaining}`,
   },
 };
@@ -303,50 +303,78 @@ function incUsage(userId) {
 // ── Replicate ─────────────────────────────────
 const replicate = new Replicate({ auth: REPLICATE_TOKEN });
 
+// ── Retry helper ──────────────────────────────
+// Retries a Replicate call up to maxRetries times on 429 rate-limit errors.
+// Reads retry_after from the error (seconds) and waits that long + 2s buffer.
+async function withRetry(fn, label, maxRetries = 3) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const is429 = err.status === 429 ||
+                    (err.message && err.message.includes("429"));
+      if (!is429 || attempt === maxRetries) throw err;
+
+      // Parse retry_after from the error response if available, default to 10s
+      const retryAfter = (err.response?.retry_after ?? err.retryAfter ?? 10);
+      const waitMs     = (retryAfter + 2) * 1000;
+      console.warn(`[replicate] ${label} — 429 rate limit, attempt ${attempt}/${maxRetries}. Waiting ${retryAfter + 2}s...`);
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
 async function generateDesign(imageDataUri, prompt) {
   const enhancedPrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
 
   // ── Step 1: adirik/interior-design ───────────
   // Room-aware redesign — preserves walls, windows, doors while changing decor.
   console.log(`[replicate] step 1 — interior-design: "${prompt.slice(0, 60)}..."`);
-  const step1Output = await replicate.run(
-    "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
-    {
-      input: {
-        image:               imageDataUri,
-        prompt:              enhancedPrompt,
-        negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
-        guidance_scale:      15,
-        prompt_strength:     0.5,
-        num_inference_steps: 50,
-      },
-    }
+  const step1Output = await withRetry(() =>
+    replicate.run(
+      "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
+      {
+        input: {
+          image:               imageDataUri,
+          prompt:              enhancedPrompt,
+          negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
+          guidance_scale:      15,
+          prompt_strength:     0.5,
+          num_inference_steps: 50,
+        },
+      }
+    ), "step 1"
   );
   const step1Url = Array.isArray(step1Output) ? step1Output[0] : String(step1Output);
   console.log(`[replicate] step 1 done: ${step1Url}`);
 
+  // 12s delay between steps to avoid back-to-back rate limit hits
+  console.log(`[replicate] waiting 12s before step 2...`);
+  await new Promise((r) => setTimeout(r, 12000));
+
   // ── Step 2: sdxl-lightning-4step ─────────────
-  // Quality enhancement pass — sharpens and upscales the interior-design output.
-  // Download the step 1 result and convert to base64 for the next model.
+  // Quality enhancement pass — download step 1 result and run through SDXL Lightning.
   console.log(`[replicate] step 2 — sdxl-lightning enhance...`);
   const res = await fetch(step1Url);
   if (!res.ok) throw new Error(`Step 2 download failed: ${res.status}`);
-  const buf        = Buffer.from(await res.arrayBuffer());
+  const buf          = Buffer.from(await res.arrayBuffer());
   const step1DataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
 
-  const step2Output = await replicate.run(
-    "bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
-    {
-      input: {
-        image:               step1DataUri,
-        prompt:              enhancedPrompt,
-        negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
-        num_outputs:         1,
-        num_inference_steps: 4,
-        guidance_scale:      0,
-        scheduler:           "K_EULER",
-      },
-    }
+  const step2Output = await withRetry(() =>
+    replicate.run(
+      "bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
+      {
+        input: {
+          image:               step1DataUri,
+          prompt:              enhancedPrompt,
+          negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
+          num_outputs:         1,
+          num_inference_steps: 4,
+          guidance_scale:      0,
+          scheduler:           "K_EULER",
+        },
+      }
+    ), "step 2"
   );
   const finalUrl = step2Output[0];
   console.log(`[replicate] step 2 done: ${finalUrl}`);
