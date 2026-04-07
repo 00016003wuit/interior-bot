@@ -625,6 +625,7 @@ bot.on(message("text"), async (ctx) => {
       const dlRes = await fetch(last.generatedImageUrl);
       if (!dlRes.ok) throw new Error(`Failed to download previous image: ${dlRes.status}`);
       const dlBuf = Buffer.from(await dlRes.arrayBuffer());
+      console.log(`[customize] image download complete: ${dlBuf.length} bytes`);
       const freshUrl = await uploadImage(dlBuf);
 
       const newGeneratedUrl = await runEdit(freshUrl, editPrompt);
