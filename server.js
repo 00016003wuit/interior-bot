@@ -306,15 +306,16 @@ const replicate = new Replicate({ auth: REPLICATE_TOKEN });
 async function generateDesign(imageDataUri, prompt) {
   console.log(`[replicate] generating with prompt: "${prompt.slice(0, 60)}..."`);
   const output = await replicate.run(
-    "lucataco/sdxl-img2img:a38a4c7e5dc80048b76ce4e8ec1749e41c21c2e8bcd66490b8e1c00f33b25cef",
+    "bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
     {
       input: {
         image:               imageDataUri,
-        prompt:              `${prompt}, pinterest interior design, architectural digest, luxury home, professional photography`,
-        negative_prompt:     "blurry, low quality, people, text, watermark, deformed",
-        strength:            0.7,
-        guidance_scale:      7.5,
-        num_inference_steps: 50,
+        prompt:              `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`,
+        negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
+        num_outputs:         1,
+        num_inference_steps: 4,
+        guidance_scale:      0,
+        scheduler:           "K_EULER",
       },
     }
   );
