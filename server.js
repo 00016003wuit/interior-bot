@@ -1,28 +1,30 @@
 require("dotenv").config();
 
-const express      = require("express");
-const { Telegraf } = require("telegraf");
-const { message }  = require("telegraf/filters");
-const Replicate    = require("replicate");
-const path         = require("path");
-const fs           = require("fs");
+const express        = require("express");
+const { Telegraf }   = require("telegraf");
+const { message }    = require("telegraf/filters");
+const { fal }        = require("@fal-ai/client");
+const path           = require("path");
+const fs             = require("fs");
 
 // ── Env ───────────────────────────────────────
-const TOKEN           = process.env.TELEGRAM_BOT_TOKEN;
-const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
-const WEBHOOK_URL     = process.env.WEBHOOK_URL;
-const PORT            = process.env.PORT || 3000;
-const APP_URL         = process.env.APP_URL || WEBHOOK_URL;
-const FREE_LIMIT      = 5;
+const TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
+const FAL_KEY     = process.env.FAL_KEY;
+const WEBHOOK_URL = process.env.WEBHOOK_URL;
+const PORT        = process.env.PORT || 3000;
+const APP_URL     = process.env.APP_URL || WEBHOOK_URL;
+const FREE_LIMIT  = 5;
 
-console.log("TELEGRAM_BOT_TOKEN :", TOKEN           ? TOKEN.slice(0, 8) + "..."           : "MISSING");
-console.log("REPLICATE_API_TOKEN:", REPLICATE_TOKEN ? REPLICATE_TOKEN.slice(0, 4) + "..." : "MISSING");
+console.log("TELEGRAM_BOT_TOKEN :", TOKEN     ? TOKEN.slice(0, 8) + "..."     : "MISSING");
+console.log("FAL_KEY            :", FAL_KEY   ? FAL_KEY.slice(0, 8) + "..."   : "MISSING");
 console.log("WEBHOOK_URL        :", WEBHOOK_URL || "MISSING");
 console.log("PORT               :", PORT);
 
-if (!TOKEN)           { console.error("ERROR: TELEGRAM_BOT_TOKEN not set");  process.exit(1); }
-if (!REPLICATE_TOKEN) { console.error("ERROR: REPLICATE_API_TOKEN not set"); process.exit(1); }
-if (!WEBHOOK_URL)     { console.error("ERROR: WEBHOOK_URL not set");         process.exit(1); }
+if (!TOKEN)       { console.error("ERROR: TELEGRAM_BOT_TOKEN not set"); process.exit(1); }
+if (!FAL_KEY)     { console.error("ERROR: FAL_KEY not set");            process.exit(1); }
+if (!WEBHOOK_URL) { console.error("ERROR: WEBHOOK_URL not set");        process.exit(1); }
+
+fal.config({ credentials: FAL_KEY });
 
 // ── Translations ──────────────────────────────
 const T = {
@@ -270,8 +272,8 @@ function clearPending(userId) {
 const lastResults  = new Map(); // userId → { imageUrl, prompt, expiresAt }
 const RESULT_TTL   = 30 * 60 * 1000;
 
-function setLastResult(userId, imageUrl, prompt, imageDataUri) {
-  lastResults.set(userId, { imageUrl, prompt, imageDataUri, expiresAt: Date.now() + RESULT_TTL });
+function setLastResult(userId, imageUrl, prompt, imageBuffer) {
+  lastResults.set(userId, { imageUrl, prompt, imageBuffer, expiresAt: Date.now() + RESULT_TTL });
 }
 function getLastResult(userId) {
   const entry = lastResults.get(userId);
@@ -300,84 +302,30 @@ function incUsage(userId) {
   return data[String(userId)];
 }
 
-// ── Replicate ─────────────────────────────────
-const replicate = new Replicate({ auth: REPLICATE_TOKEN });
+// ── fal.ai ────────────────────────────────────
+async function generateDesign(imageBuffer, prompt) {
+  const stylePrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
 
-// ── Retry helper ──────────────────────────────
-// Retries a Replicate call up to maxRetries times on 429 rate-limit errors.
-// Reads retry_after from the error (seconds) and waits that long + 2s buffer.
-async function withRetry(fn, label, maxRetries = 3) {
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      const is429 = err.status === 429 ||
-                    (err.message && err.message.includes("429"));
-      if (!is429 || attempt === maxRetries) throw err;
+  // Upload image buffer to fal.ai storage → get a public URL the model can read
+  console.log(`[fal] uploading image (${imageBuffer.length} bytes)...`);
+  const imageBlob = new Blob([imageBuffer], { type: "image/jpeg" });
+  const imageUrl  = await fal.storage.upload(imageBlob);
+  console.log(`[fal] uploaded: ${imageUrl}`);
 
-      // Parse retry_after from the error response if available, default to 10s
-      const retryAfter = (err.response?.retry_after ?? err.retryAfter ?? 10);
-      const waitMs     = (retryAfter + 2) * 1000;
-      console.warn(`[replicate] ${label} — 429 rate limit, attempt ${attempt}/${maxRetries}. Waiting ${retryAfter + 2}s...`);
-      await new Promise((r) => setTimeout(r, waitMs));
-    }
-  }
-}
+  // Generate redesign using Nano Banana
+  console.log(`[fal] generating with prompt: "${stylePrompt.slice(0, 60)}..."`);
+  const result = await fal.subscribe("fal-ai/nano-banana/edit", {
+    input: {
+      prompt:        stylePrompt,
+      image_urls:    [imageUrl],
+      num_images:    1,
+      aspect_ratio:  "auto",
+      output_format: "jpeg",
+    },
+  });
 
-async function generateDesign(imageDataUri, prompt) {
-  const enhancedPrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
-
-  // ── Step 1: adirik/interior-design ───────────
-  // Room-aware redesign — preserves walls, windows, doors while changing decor.
-  console.log(`[replicate] step 1 — interior-design: "${prompt.slice(0, 60)}..."`);
-  const step1Output = await withRetry(() =>
-    replicate.run(
-      "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
-      {
-        input: {
-          image:               imageDataUri,
-          prompt:              enhancedPrompt,
-          negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
-          guidance_scale:      15,
-          prompt_strength:     0.5,
-          num_inference_steps: 50,
-        },
-      }
-    ), "step 1"
-  );
-  const step1Url = Array.isArray(step1Output) ? step1Output[0] : String(step1Output);
-  console.log(`[replicate] step 1 done: ${step1Url}`);
-
-  // 12s delay between steps to avoid back-to-back rate limit hits
-  console.log(`[replicate] waiting 12s before step 2...`);
-  await new Promise((r) => setTimeout(r, 12000));
-
-  // ── Step 2: sdxl-lightning-4step ─────────────
-  // Quality enhancement pass — download step 1 result and run through SDXL Lightning.
-  console.log(`[replicate] step 2 — sdxl-lightning enhance...`);
-  const res = await fetch(step1Url);
-  if (!res.ok) throw new Error(`Step 2 download failed: ${res.status}`);
-  const buf          = Buffer.from(await res.arrayBuffer());
-  const step1DataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
-
-  const step2Output = await withRetry(() =>
-    replicate.run(
-      "bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
-      {
-        input: {
-          image:               step1DataUri,
-          prompt:              enhancedPrompt,
-          negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
-          num_outputs:         1,
-          num_inference_steps: 4,
-          guidance_scale:      0,
-          scheduler:           "K_EULER",
-        },
-      }
-    ), "step 2"
-  );
-  const finalUrl = step2Output[0];
-  console.log(`[replicate] step 2 done: ${finalUrl}`);
+  const finalUrl = result.data.images[0].url;
+  console.log(`[fal] done: ${finalUrl}`);
   return finalUrl;
 }
 
@@ -493,14 +441,13 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     const buf = Buffer.from(await res.arrayBuffer());
     console.log(`[action] downloaded ${buf.length} bytes`);
 
-    const imageDataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
-    const imageUrl     = await generateDesign(imageDataUri, fullPrompt);
+    const imageUrl  = await generateDesign(buf, fullPrompt);
 
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-    // Store result — keep the original imageDataUri so customizations re-use the room photo, not the AI output
-    setLastResult(userId, imageUrl, fullPrompt, imageDataUri);
+    // Store result — keep the original buffer so customizations re-use the room photo, not the AI output
+    setLastResult(userId, imageUrl, fullPrompt, buf);
 
     await ctx.replyWithPhoto(imageUrl, {
       caption: t(userId).result(style.label, remaining),
@@ -545,14 +492,14 @@ bot.on(message("text"), async (ctx) => {
       const refinedPrompt = `${last.prompt}, ${text}, preserve room structure`;
       console.log(`[customize] user=${userId} request="${text}"`);
 
-      // Always use the ORIGINAL room photo (base64) as input, not the AI-generated output
-      const newImageUrl = await generateDesign(last.imageDataUri, refinedPrompt);
+      // Always use the ORIGINAL room photo buffer as input, not the AI-generated output
+      const newImageUrl = await generateDesign(last.imageBuffer, refinedPrompt);
 
       const newCount  = incUsage(userId);
       const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-      // Keep the original imageDataUri so further customizations still use the original photo
-      setLastResult(userId, newImageUrl, refinedPrompt, last.imageDataUri);
+      // Keep the original buffer so further customizations still use the original photo
+      setLastResult(userId, newImageUrl, refinedPrompt, last.imageBuffer);
 
       await ctx.replyWithPhoto(newImageUrl, {
         caption: t(userId).customizeResult(remaining),
