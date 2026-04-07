@@ -481,6 +481,59 @@ bot.command("usage", async (ctx) => {
   return ctx.reply(t(userId).usage(used, remaining), { parse_mode: "MarkdownV2" });
 });
 
+// /help — explain how to use the bot
+bot.command("help", (ctx) => {
+  const lang = getLang(ctx.from.id);
+  const helpText = {
+    en:
+      "🏠 *Interior AI Designer — How to use*\n\n" +
+      "1\\. Send a photo of any room\n" +
+      "2\\. Choose the room type\n" +
+      "3\\. Pick one of 21 design styles\n" +
+      "4\\. Receive your AI\\-redesigned room in 30–60 seconds\\!\n\n" +
+      "💬 *Customization:* After getting a result, send a text message like:\n" +
+      "_\"make the sofa dark grey\"_ or _\"add wooden flooring\"_\n" +
+      "The bot will edit only that specific item\\.\n\n" +
+      "📋 *Commands:*\n" +
+      "/start — restart & pick language\n" +
+      "/lang — change language\n" +
+      "/usage — check remaining free designs\n" +
+      "/help — show this help\n\n" +
+      `✨ First ${FREE_LIMIT} designs FREE • 💳 10,000 UZS for next 3`,
+    ru:
+      "🏠 *Interior AI Designer — Как пользоваться*\n\n" +
+      "1\\. Отправьте фото любой комнаты\n" +
+      "2\\. Выберите тип комнаты\n" +
+      "3\\. Выберите один из 21 стиля дизайна\n" +
+      "4\\. Получите редизайн за 30–60 секунд\\!\n\n" +
+      "💬 *Настройка:* После получения результата отправьте текст:\n" +
+      "_«сделай диван тёмно\\-серым»_ или _«добавь деревянный пол»_\n" +
+      "Бот изменит только это\\.\n\n" +
+      "📋 *Команды:*\n" +
+      "/start — перезапуск и выбор языка\n" +
+      "/lang — сменить язык\n" +
+      "/usage — остаток бесплатных дизайнов\n" +
+      "/help — эта справка\n\n" +
+      `✨ Первые ${FREE_LIMIT} бесплатно • 💳 10 000 UZS за следующие 3`,
+    uz:
+      "🏠 *Interior AI Designer — Qanday foydalanish*\n\n" +
+      "1\\. Istalgan xona rasmini yuboring\n" +
+      "2\\. Xona turini tanlang\n" +
+      "3\\. 21 ta dizayn uslubidan birini tanlang\n" +
+      "4\\. 30–60 soniyada AI dizayningizni oling\\!\n\n" +
+      "💬 *Sozlash:* Natija olgandan so'ng matn yuboring:\n" +
+      "_«divanini qoʻngʻir qil»_ yoki _«yog'och pol qo'sh»_\n" +
+      "Bot faqat shuni o'zgartiradi\\.\n\n" +
+      "📋 *Buyruqlar:*\n" +
+      "/start — qayta boshlash va til tanlash\n" +
+      "/lang — tilni o'zgartirish\n" +
+      "/usage — qolgan bepul dizaynlar\n" +
+      "/help — bu yordam\n\n" +
+      `✨ Birinchi ${FREE_LIMIT} ta bepul • 💳 10 000 UZS keyingi 3 ta uchun`,
+  };
+  return ctx.reply(helpText[lang] || helpText.en, { parse_mode: "MarkdownV2" });
+});
+
 // /lang — change language at any time
 bot.command("lang", (ctx) => {
   return ctx.reply(T.en.selectLang, { reply_markup: LANG_KEYBOARD });
