@@ -1,22 +1,22 @@
 require("dotenv").config();
 
-const express        = require("express");
-const { Telegraf }   = require("telegraf");
-const { message }    = require("telegraf/filters");
-const { fal }        = require("@fal-ai/client");
-const path           = require("path");
-const fs             = require("fs");
+const express      = require("express");
+const { Telegraf } = require("telegraf");
+const { message }  = require("telegraf/filters");
+const { fal }      = require("@fal-ai/client");
+const path         = require("path");
+const fs           = require("fs");
 
-// ── Env ───────────────────────────────────────
+// ── Environment ───────────────────────────────
 const TOKEN       = process.env.TELEGRAM_BOT_TOKEN;
 const FAL_KEY     = process.env.FAL_KEY;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT        = process.env.PORT || 3000;
 const APP_URL     = process.env.APP_URL || WEBHOOK_URL;
-const FREE_LIMIT  = 5;
+const FREE_LIMIT  = 3;
 
-console.log("TELEGRAM_BOT_TOKEN :", TOKEN     ? TOKEN.slice(0, 8) + "..."     : "MISSING");
-console.log("FAL_KEY            :", FAL_KEY   ? FAL_KEY.slice(0, 8) + "..."   : "MISSING");
+console.log("TELEGRAM_BOT_TOKEN :", TOKEN     ? TOKEN.slice(0, 8) + "..."   : "MISSING");
+console.log("FAL_KEY            :", FAL_KEY   ? FAL_KEY.slice(0, 8) + "..." : "MISSING");
 console.log("WEBHOOK_URL        :", WEBHOOK_URL || "MISSING");
 console.log("PORT               :", PORT);
 
@@ -29,262 +29,368 @@ fal.config({ credentials: FAL_KEY });
 // ── Translations ──────────────────────────────
 const T = {
   en: {
-    selectLang:      "Please choose your language:",
+    selectLang: "🌍 Please choose your language:",
     welcome:
-      "🏠 Welcome to Interior AI Designer!\n" +
-      "Transform any room into a stunning interior with AI.\n\n" +
+      "🏠 *Welcome to Interior AI Designer\\!*\n\n" +
+      "Transform any room into a stunning design masterpiece using AI\\! 🎨\n\n" +
       "How it works:\n" +
       "1️⃣ Send a photo of your room\n" +
       "2️⃣ Choose your room type\n" +
-      "3️⃣ Pick a design style\n" +
-      "4️⃣ Get your AI redesign in seconds!\n\n" +
-      "✨ First 5 requests are FREE\n" +
-      "💳 After that: only 3,000 UZS per design\n\n" +
-      "Ready? Send me a photo to get started! 📸",
-    sendPhoto:       "📸 Send me a photo of your room to get started!",
-    chooseRoom:      "What type of room is this?",
-    chooseStyle:     "Now choose a design style:",
-    generating:      (roomLabel, styleLabel) => `Room: ${roomLabel} · Style: ${styleLabel}\n\n⏳ Generating your design... this may take 60–90 seconds.`,
-    result:          (styleLabel, remaining) => `✨ Here is your redesigned room!\nStyle: ${styleLabel}\nFree requests remaining: ${remaining}`,
-    gallery:         "🖼 View full-size in the gallery:",
-    galleryBtn:      "🎨 Open Gallery",
-    expired:         "⚠️ Your photo has expired (10 min limit). Please send it again.",
-    limitReached:    `You've used all ${FREE_LIMIT} free requests.\n\nTo continue, please pay 3000 UZS via Click, Payme or Uzum.\nContact support after payment to unlock more requests.`,
-    usage:           (used, remaining) => `Used: ${used} / ${FREE_LIMIT}\nFree remaining: ${remaining}`,
-    error:           (msg) => `❌ Something went wrong: ${msg}\n\nPlease try again.`,
-    unknownStyle:    "Unknown style. Please send a photo again.",
-    unknownRoom:     "Unknown room type. Please send a photo again.",
+      "3️⃣ Pick from 21 stunning design styles\n" +
+      "4️⃣ Get your AI\\-redesigned room in seconds\\!\n\n" +
+      "✨ First 3 designs are FREE\n" +
+      "💳 After that: 10,000 UZS for next 3 images\n\n" +
+      "Ready to transform your space? 👇",
+    sendPhotoBtn: "📸 Send Room Photo",
+    sendPhoto:    "📸 Please send me a photo of your room now\\!",
+    chooseRoom:   "🏠 What type of room is this?",
+    chooseStyle:  "🎨 Choose a design style:",
+    generating:   (room, style) =>
+      `🏠 Room: *${room}*\n🎨 Style: *${style}*\n\n⏳ Generating your AI design\\.\\.\\. this takes about 30–60 seconds\\.`,
+    result:       (style, remaining) =>
+      `✨ Your redesigned room is ready\\!\n\n🎨 Style: *${style}*\n🆓 Free designs remaining: *${remaining}*`,
+    gallery:      "🖼 View full\\-size in the gallery:",
+    galleryBtn:   "🎨 Open Gallery",
+    expired:      "⚠️ Your photo session expired \\(10 min limit\\)\\. Please send your photo again\\.",
+    limitReached:
+      `🚫 You've used all ${FREE_LIMIT} free designs\\!\n\n` +
+      "💳 Pay *10,000 UZS* to unlock 3 more designs:\n" +
+      "• Click\n• Payme\n• Uzum\n\n" +
+      "Contact support after payment to unlock\\.",
+    usage:        (used, remaining) =>
+      `📊 Designs used: ${used} / ${FREE_LIMIT}\n🆓 Free remaining: ${remaining}`,
+    error:        (msg) => `❌ Something went wrong: ${msg}\n\nPlease try again\\.`,
+    unknownStyle: "❓ Unknown style\\. Please send your photo again\\.",
+    unknownRoom:  "❓ Unknown room type\\. Please send your photo again\\.",
     customizePrompt:
-      "💬 Want to customize further? Tell me what to change! For example:\n\n" +
-      "• 'Change curtains to white'\n" +
-      "• 'Make walls light blue'\n" +
-      "• 'Add wooden flooring'\n" +
-      "• 'Change furniture to white'\n\n" +
-      "Or send a new photo to start over. 📸",
-    customizeGenerating: (req) => `🔄 Applying: "${req}"\n\n⏳ Generating your design... this may take 60–90 seconds.`,
-    customizeResult:     (remaining) => `✨ Here is your updated room!\nFree requests remaining: ${remaining}`,
+      "💬 *Want to customize further?*\n\n" +
+      "Tell me what to change\\! For example:\n" +
+      "• \"Change curtains to white silk\"\n" +
+      "• \"Add a cozy fireplace\"\n" +
+      "• \"Make the walls sage green\"\n" +
+      "• \"Add herringbone wooden flooring\"\n\n" +
+      "Or send a new photo to start over\\. 📸",
+    customizeGenerating: (req) =>
+      `🔄 Applying: *"${req}"*\n\n⏳ Generating your updated design\\.\\.\\.`,
+    customizeResult: (remaining) =>
+      `✨ Here is your updated design\\!\n🆓 Free designs remaining: *${remaining}*`,
   },
+
   ru: {
-    selectLang:      "Пожалуйста, выберите язык:",
+    selectLang: "🌍 Пожалуйста, выберите язык:",
     welcome:
-      "🏠 Добро пожаловать в Interior AI Designer!\n" +
-      "Превратите любую комнату в стильный интерьер с помощью ИИ.\n\n" +
+      "🏠 *Добро пожаловать в Interior AI Designer\\!*\n\n" +
+      "Превратите любую комнату в шедевр дизайна с помощью ИИ\\! 🎨\n\n" +
       "Как это работает:\n" +
       "1️⃣ Отправьте фото вашей комнаты\n" +
       "2️⃣ Выберите тип комнаты\n" +
-      "3️⃣ Выберите стиль дизайна\n" +
-      "4️⃣ Получите редизайн за секунды!\n\n" +
-      "✨ Первые 5 запросов БЕСПЛАТНО\n" +
-      "💳 Далее: всего 3 000 UZS за дизайн\n\n" +
-      "Готовы? Отправьте фото! 📸",
-    sendPhoto:       "📸 Отправьте мне фото вашей комнаты, чтобы начать!",
-    chooseRoom:      "Какой тип комнаты на фото?",
-    chooseStyle:     "Теперь выберите стиль дизайна:",
-    generating:      (roomLabel, styleLabel) => `Комната: ${roomLabel} · Стиль: ${styleLabel}\n\n⏳ Генерирую дизайн... это займёт 60–90 секунд.`,
-    result:          (styleLabel, remaining) => `✨ Вот ваша обновлённая комната!\nСтиль: ${styleLabel}\nОсталось бесплатных запросов: ${remaining}`,
-    gallery:         "🖼 Открыть в полном размере:",
-    galleryBtn:      "🎨 Открыть галерею",
-    expired:         "⚠️ Время ожидания вашего фото истекло (10 мин). Пожалуйста, отправьте фото снова.",
-    limitReached:    `Вы использовали все ${FREE_LIMIT} бесплатных запросов.\n\nДля продолжения оплатите 3000 UZS через Click, Payme или Uzum.\nСвяжитесь с поддержкой после оплаты.`,
-    usage:           (used, remaining) => `Использовано: ${used} / ${FREE_LIMIT}\nОсталось бесплатных: ${remaining}`,
-    error:           (msg) => `❌ Что-то пошло не так: ${msg}\n\nПожалуйста, попробуйте ещё раз.`,
-    unknownStyle:    "Неизвестный стиль. Пожалуйста, отправьте фото снова.",
-    unknownRoom:     "Неизвестный тип комнаты. Пожалуйста, отправьте фото снова.",
+      "3️⃣ Выберите из 21 стиля дизайна\n" +
+      "4️⃣ Получите редизайн за секунды\\!\n\n" +
+      "✨ Первые 3 дизайна БЕСПЛАТНО\n" +
+      "💳 Далее: 10 000 UZS за следующие 3 изображения\n\n" +
+      "Готовы преобразить своё пространство? 👇",
+    sendPhotoBtn: "📸 Отправить фото комнаты",
+    sendPhoto:    "📸 Пожалуйста, отправьте мне фото вашей комнаты\\!",
+    chooseRoom:   "🏠 Какой тип комнаты на фото?",
+    chooseStyle:  "🎨 Выберите стиль дизайна:",
+    generating:   (room, style) =>
+      `🏠 Комната: *${room}*\n🎨 Стиль: *${style}*\n\n⏳ Генерирую дизайн\\.\\.\\. это займёт около 30–60 секунд\\.`,
+    result:       (style, remaining) =>
+      `✨ Ваша комната готова\\!\n\n🎨 Стиль: *${style}*\n🆓 Осталось бесплатных: *${remaining}*`,
+    gallery:      "🖼 Посмотреть в полном размере:",
+    galleryBtn:   "🎨 Открыть галерею",
+    expired:      "⚠️ Время сессии истекло \\(10 мин\\)\\. Отправьте фото снова\\.",
+    limitReached:
+      `🚫 Вы использовали все ${FREE_LIMIT} бесплатных дизайна\\!\n\n` +
+      "💳 Оплатите *10 000 UZS* для разблокировки ещё 3 дизайнов:\n" +
+      "• Click\n• Payme\n• Uzum\n\n" +
+      "Свяжитесь с поддержкой после оплаты\\.",
+    usage:        (used, remaining) =>
+      `📊 Использовано: ${used} / ${FREE_LIMIT}\n🆓 Осталось бесплатных: ${remaining}`,
+    error:        (msg) => `❌ Что\\-то пошло не так: ${msg}\n\nПопробуйте ещё раз\\.`,
+    unknownStyle: "❓ Неизвестный стиль\\. Отправьте фото снова\\.",
+    unknownRoom:  "❓ Неизвестный тип комнаты\\. Отправьте фото снова\\.",
     customizePrompt:
-      "💬 Хотите изменить что-то ещё? Напишите, что поменять! Например:\n\n" +
-      "• 'Сделай шторы белыми'\n" +
-      "• 'Покрась стены в светло-голубой'\n" +
-      "• 'Добавь деревянный пол'\n" +
-      "• 'Замени мебель на белую'\n\n" +
-      "Или отправьте новое фото, чтобы начать заново. 📸",
-    customizeGenerating: (req) => `🔄 Применяю: "${req}"\n\n⏳ Генерирую дизайн... это займёт 60–90 секунд.`,
-    customizeResult:     (remaining) => `✨ Вот ваша обновлённая комната!\nОсталось бесплатных запросов: ${remaining}`,
+      "💬 *Хотите изменить что\\-то?*\n\n" +
+      "Напишите, что поменять\\! Например:\n" +
+      "• «Сделай шторы белыми из шёлка»\n" +
+      "• «Добавь камин»\n" +
+      "• «Покрась стены в шалфейно\\-зелёный»\n" +
+      "• «Добавь паркет»\n\n" +
+      "Или отправьте новое фото, чтобы начать заново\\. 📸",
+    customizeGenerating: (req) =>
+      `🔄 Применяю: *«${req}»*\n\n⏳ Генерирую обновлённый дизайн\\.\\.\\.`,
+    customizeResult: (remaining) =>
+      `✨ Вот ваш обновлённый дизайн\\!\n🆓 Осталось бесплатных: *${remaining}*`,
   },
+
   uz: {
-    selectLang:      "Iltimos, tilni tanlang:",
+    selectLang: "🌍 Iltimos, tilni tanlang:",
     welcome:
-      "🏠 Interior AI Designer'ga xush kelibsiz!\n" +
-      "Istalgan xonani AI yordamida ajoyib interyer'ga aylantiring.\n\n" +
+      "🏠 *Interior AI Designer'ga xush kelibsiz\\!*\n\n" +
+      "Istalgan xonangizni AI yordamida go'zal dizayn asariga aylantiring\\! 🎨\n\n" +
       "Qanday ishlaydi:\n" +
-      "1️⃣ Xonangizning rasmini yuboring\n" +
+      "1️⃣ Xona rasmini yuboring\n" +
       "2️⃣ Xona turini tanlang\n" +
-      "3️⃣ Dizayn uslubini tanlang\n" +
-      "4️⃣ Soniyalar ichida AI dizaynini oling!\n\n" +
-      "✨ Birinchi 5 ta so'rov BEPUL\n" +
-      "💳 Keyin: har bir dizayn uchun atigi 3 000 UZS\n\n" +
-      "Tayyor? Rasm yuboring! 📸",
-    sendPhoto:       "📸 Boshlash uchun xonangizning rasmini yuboring!",
-    chooseRoom:      "Bu qanday xona turi?",
-    chooseStyle:     "Endi dizayn uslubini tanlang:",
-    generating:      (roomLabel, styleLabel) => `Xona: ${roomLabel} · Uslub: ${styleLabel}\n\n⏳ Dizayn yaratilmoqda... bu 60–90 soniya oladi.`,
-    result:          (styleLabel, remaining) => `✨ Mana sizning yangi xonangiz!\nUslub: ${styleLabel}\nQolgan bepul so'rovlar: ${remaining}`,
-    gallery:         "🖼 To'liq o'lchamda ko'rish:",
-    galleryBtn:      "🎨 Galereyani ochish",
-    expired:         "⚠️ Rasmingiz vaqti tugadi (10 daqiqa). Iltimos, rasmni qayta yuboring.",
-    limitReached:    `Siz barcha ${FREE_LIMIT} ta bepul so'rovdan foydalandingiz.\n\nDavom etish uchun Click, Payme yoki Uzum orqali 3000 UZS to'lang.\nTo'lovdan keyin qo'llab-quvvatlash xizmati bilan bog'laning.`,
-    usage:           (used, remaining) => `Ishlatildi: ${used} / ${FREE_LIMIT}\nQoldi bepul: ${remaining}`,
-    error:           (msg) => `❌ Xatolik yuz berdi: ${msg}\n\nIltimos, qayta urining.`,
-    unknownStyle:    "Noma'lum uslub. Iltimos, rasmni qayta yuboring.",
-    unknownRoom:     "Noma'lum xona turi. Iltimos, rasmni qayta yuboring.",
+      "3️⃣ 21 ta ajoyib dizayn uslubidan birini tanlang\n" +
+      "4️⃣ Soniyalar ichida AI dizayningizni oling\\!\n\n" +
+      "✨ Birinchi 3 ta dizayn BEPUL\n" +
+      "💳 Keyin: yana 3 ta rasm uchun 10 000 UZS\n\n" +
+      "Xonangizni o'zgartirishga tayyormisiz? 👇",
+    sendPhotoBtn: "📸 Xona rasmini yuboring",
+    sendPhoto:    "📸 Iltimos, xonangizning rasmini yuboring\\!",
+    chooseRoom:   "🏠 Bu qanday xona turi?",
+    chooseStyle:  "🎨 Dizayn uslubini tanlang:",
+    generating:   (room, style) =>
+      `🏠 Xona: *${room}*\n🎨 Uslub: *${style}*\n\n⏳ AI dizayn yaratilmoqda\\.\\.\\. bu 30–60 soniya oladi\\.`,
+    result:       (style, remaining) =>
+      `✨ Sizning yangi dizayningiz tayyor\\!\n\n🎨 Uslub: *${style}*\n🆓 Qolgan bepul: *${remaining}*`,
+    gallery:      "🖼 To'liq o'lchamda ko'rish:",
+    galleryBtn:   "🎨 Galereyani ochish",
+    expired:      "⚠️ Rasm sessiyasi tugadi \\(10 daqiqa\\)\\. Rasmni qayta yuboring\\.",
+    limitReached:
+      `🚫 Siz barcha ${FREE_LIMIT} ta bepul dizayndan foydalandingiz\\!\n\n` +
+      "💳 Yana 3 ta dizayn uchun *10 000 UZS* to'lang:\n" +
+      "• Click\n• Payme\n• Uzum\n\n" +
+      "To'lovdan keyin qo'llab\\-quvvatlash bilan bog'laning\\.",
+    usage:        (used, remaining) =>
+      `📊 Ishlatildi: ${used} / ${FREE_LIMIT}\n🆓 Qoldi: ${remaining}`,
+    error:        (msg) => `❌ Xatolik yuz berdi: ${msg}\n\nQayta urining\\.`,
+    unknownStyle: "❓ Noma'lum uslub\\. Rasmni qayta yuboring\\.",
+    unknownRoom:  "❓ Noma'lum xona turi\\. Rasmni qayta yuboring\\.",
     customizePrompt:
-      "💬 Yana o'zgartirmoqchimisiz? Nima o'zgartirishni yozing! Masalan:\n\n" +
-      "• 'Pardalarni oq qil'\n" +
-      "• 'Devorlarni och ko'k rang'\n" +
-      "• 'Yog'och pol qo'sh'\n" +
-      "• 'Mebelni oq rang'\n\n" +
-      "Yoki yangi rasm yuboring. 📸",
-    customizeGenerating: (req) => `🔄 Qo'llanmoqda: "${req}"\n\n⏳ Dizayn yaratilmoqda... bu 60–90 soniya oladi.`,
-    customizeResult:     (remaining) => `✨ Mana yangilangan xonangiz!\nQolgan bepul so'rovlar: ${remaining}`,
+      "💬 *Yana o'zgartirmoqchimisiz?*\n\n" +
+      "Nima o'zgartirishni yozing\\! Masalan:\n" +
+      "• «Pardalarni oq ipak qil»\n" +
+      "• «Kamin qo'sh»\n" +
+      "• «Devorlarni yashil rang»\n" +
+      "• «Yog'och parket qo'sh»\n\n" +
+      "Yoki yangi rasm yuboring\\. 📸",
+    customizeGenerating: (req) =>
+      `🔄 Qo'llanmoqda: *«${req}»*\n\n⏳ Yangi dizayn yaratilmoqda\\.\\.\\.`,
+    customizeResult: (remaining) =>
+      `✨ Mana yangilangan dizayningiz\\!\n🆓 Qolgan bepul: *${remaining}*`,
   },
 };
 
-// Language selection keyboard — shown on /start
+// Language keyboard — O'zbek first as requested
 const LANG_KEYBOARD = {
   inline_keyboard: [[
-    { text: "🇬🇧 English", callback_data: "lang:en" },
-    { text: "🇷🇺 Русский", callback_data: "lang:ru" },
     { text: "🇺🇿 O'zbek",  callback_data: "lang:uz" },
+    { text: "🇷🇺 Русский", callback_data: "lang:ru" },
+    { text: "🇬🇧 English", callback_data: "lang:en" },
   ]],
 };
 
-// ── User language store ───────────────────────
-// Persisted to langs.json so preferences survive restarts.
-const LANGS_FILE = path.join(__dirname, "langs.json");
+// ── Language store (Map-based) ─────────────────
+const userLangs = new Map(); // userId → "en"|"ru"|"uz"
 
-function loadLangs() {
-  try { return JSON.parse(fs.readFileSync(LANGS_FILE, "utf8")); }
-  catch { return {}; }
-}
-function getLang(userId) {
-  return loadLangs()[String(userId)] || "en";
-}
-function setLang(userId, lang) {
-  const data = loadLangs();
-  data[String(userId)] = lang;
-  fs.writeFileSync(LANGS_FILE, JSON.stringify(data, null, 2));
-}
-// Shorthand: get the translation object for a user
-function t(userId) {
-  return T[getLang(userId)];
-}
+function getLang(userId)       { return userLangs.get(String(userId)) || "en"; }
+function setLang(userId, lang) { userLangs.set(String(userId), lang); }
+function t(userId)             { return T[getLang(userId)]; }
 
-// ── Room type definitions ─────────────────────
+// ── Room types ────────────────────────────────
 const ROOM_TYPES = {
-  living:  { label: "🛋️ Living Room",  prompt: "living room" },
-  bedroom: { label: "🛏️ Bedroom",      prompt: "bedroom" },
-  kitchen: { label: "🍳 Kitchen",       prompt: "kitchen" },
-  bathroom:{ label: "🛁 Bathroom",      prompt: "bathroom" },
-  office:  { label: "🏢 Office",        prompt: "home office" },
-  dining:  { label: "🍽️ Dining Room",  prompt: "dining room" },
+  living:   { emoji: "🛋️", label: { en: "Living Room",  ru: "Гостиная",    uz: "Mehmonxona"    }, prompt: "living room"  },
+  bedroom:  { emoji: "🛏️", label: { en: "Bedroom",      ru: "Спальня",     uz: "Yotoqxona"     }, prompt: "bedroom"      },
+  kitchen:  { emoji: "🍳",  label: { en: "Kitchen",      ru: "Кухня",       uz: "Oshxona"       }, prompt: "kitchen"      },
+  bathroom: { emoji: "🛁",  label: { en: "Bathroom",     ru: "Ванная",      uz: "Hammom"        }, prompt: "bathroom"     },
+  office:   { emoji: "🏢",  label: { en: "Office",       ru: "Офис",        uz: "Ofis"          }, prompt: "home office"  },
+  dining:   { emoji: "🍽️", label: { en: "Dining Room",  ru: "Столовая",    uz: "Ovqat xonasi"  }, prompt: "dining room"  },
 };
 
-const ROOM_KEYBOARD = {
-  inline_keyboard: [
-    [
-      { text: ROOM_TYPES.living.label,   callback_data: "room:living" },
-      { text: ROOM_TYPES.bedroom.label,  callback_data: "room:bedroom" },
-    ],
-    [
-      { text: ROOM_TYPES.kitchen.label,  callback_data: "room:kitchen" },
-      { text: ROOM_TYPES.bathroom.label, callback_data: "room:bathroom" },
-    ],
-    [
-      { text: ROOM_TYPES.office.label,   callback_data: "room:office" },
-      { text: ROOM_TYPES.dining.label,   callback_data: "room:dining" },
-    ],
-  ],
-};
+function getRoomLabel(roomKey, lang) {
+  const room = ROOM_TYPES[roomKey];
+  if (!room) return roomKey;
+  return `${room.emoji} ${room.label[lang] || room.label.en}`;
+}
 
-// ── Style definitions ─────────────────────────
-const QUALITY = "8k uhd, ultra sharp, highly detailed, professional interior photography, sharp focus, high resolution";
-const BASE    = `preserve original room structure, same walls same windows same doors, only change interior decoration and furniture, do not add or remove architectural elements, ${QUALITY}`;
+function getRoomKeyboard(lang) {
+  const btn = (key) => ({ text: getRoomLabel(key, lang), callback_data: `room:${key}` });
+  return {
+    inline_keyboard: [
+      [btn("living"),   btn("bedroom")  ],
+      [btn("kitchen"),  btn("bathroom") ],
+      [btn("office"),   btn("dining")   ],
+    ],
+  };
+}
 
+// ── Style definitions (21 styles) ────────────
 const PRESERVE = "redesign this exact room, keep all existing windows doors walls ceiling as they are, only add furniture and decor, do not add any new architectural elements, do not add arches doors or openings that don't exist";
+const QUALITY  = "8k uhd, ultra sharp, highly detailed, professional interior photography, sharp focus, high resolution";
 
 const STYLES = {
   modern: {
-    label:  "🏙️ Modern Minimalist",
-    prompt: `${PRESERVE}, modern minimalist interior design, clean lines, neutral palette of white and warm grey, polished concrete floors, recessed LED lighting, floating furniture, built-in storage, large floor-to-ceiling windows with sheer linen curtains, indoor plants, abstract wall art, professional interior photography, Pinterest worthy, architectural digest quality, 8k uhd, ultra sharp, ${BASE}`,
-  },
-  hitech: {
-    label:  "🤖 Hi-Tech / Futuristic",
-    prompt: `${PRESERVE}, futuristic smart home interior, glossy surfaces, ambient RGB LED strip lighting, dark charcoal and electric blue palette, sleek metallic furniture, glass and steel elements, integrated screens on walls, wireless charging stations, floating shelves, minimal clutter, cyberpunk inspired luxury, professional interior photography, Pinterest worthy, 8k uhd, ultra sharp, ${BASE}`,
+    emoji: "🏙️",
+    label: { en: "Modern", ru: "Современный", uz: "Zamonaviy" },
+    prompt: `${PRESERVE}, modern interior design, clean geometric lines, monochromatic palette of white grey and charcoal, polished surfaces, recessed LED lighting, floating low-profile furniture, built-in shelving, abstract wall art, sculptural indoor plants, ${QUALITY}`,
   },
   contemporary: {
-    label:  "🏛️ Contemporary",
-    prompt: `${PRESERVE}, contemporary luxury interior design, warm earthy tones, terracotta and cream palette, textured boucle sofa, brass and gold accents, statement pendant lighting, layered rugs, velvet throw pillows, large abstract paintings, dried pampas grass decor, professional interior photography, Pinterest worthy, architectural digest quality, 8k uhd, ${BASE}`,
+    emoji: "🏛️",
+    label: { en: "Contemporary", ru: "Контемпорари", uz: "Hozirgi zamon" },
+    prompt: `${PRESERVE}, contemporary interior design, warm earthy tones, terracotta cream and warm beige palette, textured boucle sofa, brass and matte gold accents, statement pendant lighting, layered area rugs, velvet throw pillows, large abstract paintings, dried pampas grass, ${QUALITY}`,
+  },
+  minimalist: {
+    emoji: "✨",
+    label: { en: "Minimalist", ru: "Минимализм", uz: "Minimalizm" },
+    prompt: `${PRESERVE}, minimalist interior design, pure white walls, absolute bare essentials only, zen negative space, simple low-profile furniture, diffused natural light, monochromatic tones, no clutter, single sculptural element as focal point, ${QUALITY}`,
+  },
+  traditional: {
+    emoji: "🏺",
+    label: { en: "Traditional", ru: "Традиционный", uz: "An'anaviy" },
+    prompt: `${PRESERVE}, traditional interior design, rich mahogany wood furniture, ornate carved details, deep burgundy and navy palette, Persian rug, crown molding, antique brass fixtures, heavy floral damask drapes, symmetrical furniture layout, framed oil paintings, ${QUALITY}`,
+  },
+  transitional: {
+    emoji: "🔄",
+    label: { en: "Transitional", ru: "Переходный", uz: "O'tish davri" },
+    prompt: `${PRESERVE}, transitional interior design, perfect blend of traditional warmth and modern simplicity, warm greige palette, tufted sofa with clean lines, mixed wood and metal furniture, neutral upholstery, understated elegant accessories, ${QUALITY}`,
   },
   scandinavian: {
-    label:  "🌿 Scandinavian",
-    prompt: `${PRESERVE}, Scandinavian hygge interior design, cozy warm atmosphere, white walls with natural wood accents, herringbone oak floors, sheepskin throws, knitted blankets, candles, hanging rattan pendant lights, fiddle leaf fig plant, linen curtains, minimalist functional furniture, soft warm lighting, professional interior photography, Pinterest worthy, 8k uhd, ultra sharp, ${BASE}`,
+    emoji: "🌿",
+    label: { en: "Scandinavian", ru: "Скандинавский", uz: "Skandinaviya" },
+    prompt: `${PRESERVE}, Scandinavian hygge interior design, pure white walls, light ash herringbone wood floors, sheepskin throws, chunky knit blankets, hanging rattan pendant lights, fiddle leaf fig tree, natural linen curtains, simple functional furniture, warm soft ambient lighting, ${QUALITY}`,
   },
-  mixed: {
-    label:  "🎨 Mixed Materials",
-    prompt: `${PRESERVE}, eclectic mixed materials interior design, exposed brick wall combined with marble surfaces, warm walnut wood furniture mixed with black metal frames, woven rattan light fixture, Persian rug, gallery wall with mixed frames, leather sofa, ceramic vases, copper accents, layered textures, professional interior photography, Pinterest worthy, 8k uhd, ${BASE}`,
+  japandi: {
+    emoji: "🎋",
+    label: { en: "Japandi", ru: "Джапанди", uz: "Japandi" },
+    prompt: `${PRESERVE}, Japandi interior design, Japanese wabi-sabi meets Scandinavian minimalism, muted earthy palette of warm clay beige and charcoal, low-profile furniture close to ground, shoji-inspired screen panels, natural bamboo and linen textures, asymmetric composition, handcrafted ceramics and pottery, ${QUALITY}`,
   },
-  oriental: {
-    label:  "🕌 Oriental / Eastern",
-    prompt: `${PRESERVE}, luxury oriental interior design, deep jewel tones, emerald green and gold palette, ornate geometric tile patterns, carved wooden screens, silk cushions with intricate embroidery, Arabic lanterns casting warm patterns, low seating with floor cushions, zellige tile feature wall, carved plaster details, indoor fountain, professional interior photography, Pinterest worthy, 8k uhd, ${BASE}`,
+  bohemian: {
+    emoji: "🌸",
+    label: { en: "Bohemian", ru: "Богемный", uz: "Bohem" },
+    prompt: `${PRESERVE}, bohemian boho interior design, vibrant eclectic mix, macrame wall hangings, layered Persian and Kilim rugs, rattan peacock chair, abundant cascading indoor plants, colorful embroidered cushions, hanging string fairy lights, global textiles and tapestries, ${QUALITY}`,
+  },
+  rustic: {
+    emoji: "🪵",
+    label: { en: "Rustic", ru: "Рустик", uz: "Rustik" },
+    prompt: `${PRESERVE}, rustic interior design, exposed rough-hewn wood beams on ceiling, stone accent wall, warm amber and tobacco earth tones, leather armchairs, wrought iron light fixtures, reclaimed wood dining table, burlap and plaid textiles, antler decor, ${QUALITY}`,
+  },
+  farmhouse: {
+    emoji: "🌾",
+    label: { en: "Farmhouse", ru: "Фермерский", uz: "Ferma uyi" },
+    prompt: `${PRESERVE}, modern farmhouse interior design, white shiplap accent wall, reclaimed barn wood open shelves, white and neutral tones, galvanized metal accents, cotton and linen upholstery, vintage-style lanterns, mason jar decor, cotton wreath, ${QUALITY}`,
+  },
+  industrial: {
+    emoji: "⚙️",
+    label: { en: "Industrial", ru: "Индустриальный", uz: "Industrial" },
+    prompt: `${PRESERVE}, industrial interior design, exposed red brick wall, visible steel I-beams on ceiling, polished concrete floor, dark charcoal and rust palette, Edison bulb pendant lights, factory-style metal furniture, tufted leather sofa, vintage industrial wall clock, pipe shelving, ${QUALITY}`,
+  },
+  loft: {
+    emoji: "🏗️",
+    label: { en: "Loft", ru: "Лофт", uz: "Loft" },
+    prompt: `${PRESERVE}, modern loft interior design, soaring double-height ceilings, large steel-framed factory windows, open-plan living area, exposed black metal ductwork and pipes, polished concrete walls, oversized modular sectional sofa, track lighting system, large urban abstract mural, ${QUALITY}`,
+  },
+  midcentury: {
+    emoji: "🕰️",
+    label: { en: "Mid-Century Modern", ru: "Середина века", uz: "O'rtaasriy zamonaviy" },
+    prompt: `${PRESERVE}, mid-century modern interior design, 1950s and 1960s retro aesthetic, organic tulip-shaped furniture, teak wood credenza with tapered legs, bold mustard yellow and burnt orange palette, Eames-inspired lounge chair, sunburst wall clock, geometric patterned rug, ${QUALITY}`,
+  },
+  artdeco: {
+    emoji: "💎",
+    label: { en: "Art Deco", ru: "Ар-деко", uz: "Art Deko" },
+    prompt: `${PRESERVE}, art deco interior design, 1920s glamour aesthetic, bold geometric sunburst patterns, rich jewel tones of emerald green and sapphire blue, polished gold and chrome accents, mirrored furniture surfaces, chevron parquet wood floor, velvet upholstery, crystal chandelier, ${QUALITY}`,
+  },
+  hollywoodglam: {
+    emoji: "⭐",
+    label: { en: "Hollywood Glam", ru: "Голливудский гламур", uz: "Gollivud glamuri" },
+    prompt: `${PRESERVE}, Hollywood regency glamour interior design, ultra-luxurious aesthetic, mirrored accent walls and furniture, plush silver and white palette, dramatic crystal chandelier, white faux fur throws, lacquered furniture, floor-to-ceiling silk curtains, ${QUALITY}`,
+  },
+  mediterranean: {
+    emoji: "🌊",
+    label: { en: "Mediterranean", ru: "Средиземноморский", uz: "O'rta dengiz" },
+    prompt: `${PRESERVE}, Mediterranean interior design, whitewashed plaster walls, terracotta floor tiles, cobalt blue and warm white palette, hand-painted decorative ceramic tiles, wrought iron chandelier and railings, linen drapes, terracotta olive tree pot, ${QUALITY}`,
+  },
+  moroccan: {
+    emoji: "🕌",
+    label: { en: "Moroccan", ru: "Марокканский", uz: "Marokash" },
+    prompt: `${PRESERVE}, Moroccan Riad interior design, ornate hand-carved plaster wall details, zellige mosaic tile floor, rich jewel tones of sapphire and saffron, silk embroidered floor cushions on low seating, ornate brass lanterns casting geometric light patterns, carved wooden mashrabiya screen, ${QUALITY}`,
+  },
+  asianzen: {
+    emoji: "🍃",
+    label: { en: "Asian Zen", ru: "Азиатский дзен", uz: "Osiyo Zen" },
+    prompt: `${PRESERVE}, Asian Zen interior design, Japanese meditation aesthetic, dark ebony wood and bamboo elements, soft stone grey and sage green palette, shoji rice paper screen dividers, bonsai tree on display, ikebana flower arrangement, indoor stone water feature, smooth river rock garden elements, ${QUALITY}`,
+  },
+  eclectic: {
+    emoji: "🎨",
+    label: { en: "Eclectic", ru: "Эклектика", uz: "Eklektik" },
+    prompt: `${PRESERVE}, eclectic interior design, bold intentional mix of different design periods and global cultures, vibrant jewel tones, floor-to-ceiling gallery wall of diverse art frames, unique vintage statement furniture, unexpected material combinations, playful contrasting patterns and textures, ${QUALITY}`,
+  },
+  maximalist: {
+    emoji: "🌈",
+    label: { en: "Maximalist", ru: "Максимализм", uz: "Maksimalizm" },
+    prompt: `${PRESERVE}, maximalist interior design, more is more philosophy, jewel-toned wallpapered walls, floor-to-ceiling gallery of diverse framed artwork, lush layered patterned rugs stacked, abundant decorative objects and sculptures, velvet tufted furniture, ornate gilded mirror, dramatic chandelier, every surface thoughtfully styled, ${QUALITY}`,
+  },
+  biophilic: {
+    emoji: "🌱",
+    label: { en: "Biophilic", ru: "Биофильный", uz: "Biofilik" },
+    prompt: `${PRESERVE}, biophilic interior design, deep connection with nature, lush cascading indoor plants and hanging vines from ceiling, living moss wall feature panel, raw natural wood and stone surfaces throughout, abundant natural light, indoor water feature, organic curved furniture, forest green and warm clay earth tones, ${QUALITY}`,
   },
 };
 
-const STYLE_KEYBOARD = {
-  inline_keyboard: [
-    [
-      { text: STYLES.modern.label,       callback_data: "style:modern" },
-      { text: STYLES.hitech.label,       callback_data: "style:hitech" },
-    ],
-    [
-      { text: STYLES.contemporary.label, callback_data: "style:contemporary" },
-      { text: STYLES.scandinavian.label, callback_data: "style:scandinavian" },
-    ],
-    [
-      { text: STYLES.mixed.label,        callback_data: "style:mixed" },
-      { text: STYLES.oriental.label,     callback_data: "style:oriental" },
-    ],
-  ],
-};
+function getStyleLabel(styleKey, lang) {
+  const style = STYLES[styleKey];
+  if (!style) return styleKey;
+  return `${style.emoji} ${style.label[lang] || style.label.en}`;
+}
+
+function getStyleKeyboard(lang) {
+  const keys = Object.keys(STYLES);
+  const rows = [];
+  for (let i = 0; i < keys.length; i += 3) {
+    rows.push(
+      keys.slice(i, i + 3).map((k) => ({
+        text:          getStyleLabel(k, lang),
+        callback_data: `style:${k}`,
+      }))
+    );
+  }
+  return { inline_keyboard: rows };
+}
 
 // ── Pending photo store ───────────────────────
-// Holds fileId + chosen roomType while user works through the two-step menu.
 const pendingPhotos = new Map(); // userId → { fileId, roomType, expiresAt }
 const PENDING_TTL   = 10 * 60 * 1000;
 
 function setPending(userId, fileId) {
-  pendingPhotos.set(userId, { fileId, roomType: null, expiresAt: Date.now() + PENDING_TTL });
+  pendingPhotos.set(String(userId), { fileId, roomType: null, expiresAt: Date.now() + PENDING_TTL });
 }
 function getPending(userId) {
-  const entry = pendingPhotos.get(userId);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) { pendingPhotos.delete(userId); return null; }
-  return entry;
+  const e = pendingPhotos.get(String(userId));
+  if (!e) return null;
+  if (Date.now() > e.expiresAt) { pendingPhotos.delete(String(userId)); return null; }
+  return e;
 }
 function setRoomType(userId, roomType) {
-  const entry = pendingPhotos.get(userId);
-  if (entry) entry.roomType = roomType;
+  const e = pendingPhotos.get(String(userId));
+  if (e) e.roomType = roomType;
 }
 function clearPending(userId) {
-  pendingPhotos.delete(userId);
+  pendingPhotos.delete(String(userId));
 }
 
 // ── Last result store ─────────────────────────
-// Stores originalImageUrl (fal.ai storage URL of the room photo) and
-// generatedImageUrl (last AI output) so customizations build cumulatively
-// on top of the previous generation rather than re-generating from scratch.
-const lastResults  = new Map(); // userId → { originalImageUrl, generatedImageUrl, prompt, expiresAt }
-const RESULT_TTL   = 30 * 60 * 1000;
+// originalImageUrl  — fal.ai storage URL of the original room photo
+// generatedImageUrl — URL of the last AI-generated image (builds cumulatively)
+const lastResults = new Map(); // userId → { originalImageUrl, generatedImageUrl, prompt, expiresAt }
+const RESULT_TTL  = 30 * 60 * 1000;
 
 function setLastResult(userId, originalImageUrl, generatedImageUrl, prompt) {
-  lastResults.set(userId, { originalImageUrl, generatedImageUrl, prompt, expiresAt: Date.now() + RESULT_TTL });
+  lastResults.set(String(userId), {
+    originalImageUrl,
+    generatedImageUrl,
+    prompt,
+    expiresAt: Date.now() + RESULT_TTL,
+  });
 }
 function getLastResult(userId) {
-  const entry = lastResults.get(userId);
-  if (!entry) return null;
-  if (Date.now() > entry.expiresAt) { lastResults.delete(userId); return null; }
-  return entry;
+  const e = lastResults.get(String(userId));
+  if (!e) return null;
+  if (Date.now() > e.expiresAt) { lastResults.delete(String(userId)); return null; }
+  return e;
 }
 function clearLastResult(userId) {
-  lastResults.delete(userId);
+  lastResults.delete(String(userId));
 }
 
 // ── Usage tracking ────────────────────────────
@@ -294,9 +400,7 @@ function loadUsage() {
   try { return JSON.parse(fs.readFileSync(USAGE_FILE, "utf8")); }
   catch { return {}; }
 }
-function getUsage(userId) {
-  return loadUsage()[String(userId)] || 0;
-}
+function getUsage(userId) { return loadUsage()[String(userId)] || 0; }
 function incUsage(userId) {
   const data = loadUsage();
   data[String(userId)] = (data[String(userId)] || 0) + 1;
@@ -304,9 +408,9 @@ function incUsage(userId) {
   return data[String(userId)];
 }
 
-// ── fal.ai ────────────────────────────────────
+// ── fal.ai helpers ────────────────────────────
 
-// Upload a Buffer to fal.ai storage and return the public URL.
+// Upload a Buffer to fal.ai storage → returns a public URL.
 async function uploadImage(buffer) {
   console.log(`[fal] uploading image (${buffer.length} bytes)...`);
   const blob = new Blob([buffer], { type: "image/jpeg" });
@@ -315,14 +419,13 @@ async function uploadImage(buffer) {
   return url;
 }
 
-// Run Nano Banana edit on an existing image URL with the given prompt.
-// Returns the URL of the generated image.
+// Run Nano Banana edit on an existing image URL → returns the generated image URL.
 async function runEdit(imageUrl, prompt) {
-  const stylePrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
-  console.log(`[fal] generating with prompt: "${stylePrompt.slice(0, 80)}..."`);
+  const fullPrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
+  console.log(`[fal] generating — prompt: "${fullPrompt.slice(0, 80)}..."`);
   const result = await fal.subscribe("fal-ai/nano-banana/edit", {
     input: {
-      prompt:        stylePrompt,
+      prompt:        fullPrompt,
       image_urls:    [imageUrl],
       num_images:    1,
       aspect_ratio:  "auto",
@@ -341,7 +444,7 @@ bot.catch((err, ctx) => {
   console.error("[bot:error]", ctx.updateType, err.message);
 });
 
-// /start — always show language picker first
+// /start — always show language picker
 bot.start((ctx) => {
   return ctx.reply(T.en.selectLang, { reply_markup: LANG_KEYBOARD });
 });
@@ -352,7 +455,21 @@ bot.action(/^lang:(en|ru|uz)$/, async (ctx) => {
   const userId = ctx.from.id;
   setLang(userId, lang);
   await ctx.answerCbQuery();
-  await ctx.editMessageText(t(userId).welcome);
+  await ctx.editMessageText(t(userId).welcome, {
+    parse_mode:   "MarkdownV2",
+    reply_markup: {
+      inline_keyboard: [[
+        { text: t(userId).sendPhotoBtn, callback_data: "action:sendphoto" },
+      ]],
+    },
+  });
+});
+
+// "📸 Send Room Photo" button — guide user to send a photo
+bot.action("action:sendphoto", async (ctx) => {
+  const userId = ctx.from.id;
+  await ctx.answerCbQuery();
+  await ctx.editMessageText(t(userId).sendPhoto, { parse_mode: "MarkdownV2" });
 });
 
 // /usage
@@ -360,91 +477,89 @@ bot.command("usage", async (ctx) => {
   const userId    = ctx.from.id;
   const used      = getUsage(userId);
   const remaining = Math.max(0, FREE_LIMIT - used);
-  return ctx.reply(t(userId).usage(used, remaining));
+  return ctx.reply(t(userId).usage(used, remaining), { parse_mode: "MarkdownV2" });
 });
 
-// /lang — allow changing language at any time
+// /lang — change language at any time
 bot.command("lang", (ctx) => {
   return ctx.reply(T.en.selectLang, { reply_markup: LANG_KEYBOARD });
 });
 
-// Photo received → check limit, store file_id, show room type menu
+// Photo received → check limit → store file_id → show room type menu
 bot.on(message("photo"), async (ctx) => {
   const userId = ctx.from.id;
 
   if (getUsage(userId) >= FREE_LIMIT) {
-    return ctx.reply(t(userId).limitReached);
+    return ctx.reply(t(userId).limitReached, { parse_mode: "MarkdownV2" });
   }
 
   const photos  = ctx.message.photo;
-  // photos[] is sorted smallest→largest by Telegram; last item is always highest resolution
-  const largest = photos[photos.length - 1];
-  console.log(`[photo] using highest res: ${largest.width}x${largest.height} (${largest.file_size ?? "?"}B)`);
-  setPending(userId, largest.file_id);
-  clearLastResult(userId); // new photo = fresh session, discard previous customization chain
-  console.log(`[photo] stored pending file_id=${largest.file_id} for user=${userId}`);
+  const largest = photos[photos.length - 1]; // highest resolution
+  console.log(`[photo] ${largest.width}x${largest.height} (${largest.file_size ?? "?"}B) user=${userId}`);
 
-  await ctx.reply(t(userId).chooseRoom, { reply_markup: ROOM_KEYBOARD });
+  setPending(userId, largest.file_id);
+  clearLastResult(userId); // fresh session, discard previous customization chain
+
+  const lang = getLang(userId);
+  await ctx.reply(t(userId).chooseRoom, { reply_markup: getRoomKeyboard(lang) });
 });
 
-// Room type selected → store room type, show style menu
+// Room type selected → show style menu
 bot.action(/^room:(.+)$/, async (ctx) => {
   const roomKey = ctx.match[1];
   const room    = ROOM_TYPES[roomKey];
   const userId  = ctx.from.id;
+  const lang    = getLang(userId);
 
   await ctx.answerCbQuery();
 
-  if (!room) {
-    return ctx.reply(t(userId).unknownRoom);
-  }
+  if (!room) return ctx.reply(t(userId).unknownRoom, { parse_mode: "MarkdownV2" });
 
   const pending = getPending(userId);
-  if (!pending) {
-    return ctx.reply(t(userId).expired);
-  }
+  if (!pending) return ctx.reply(t(userId).expired, { parse_mode: "MarkdownV2" });
 
   setRoomType(userId, roomKey);
 
-  await ctx.editMessageText(`${room.label} ✓\n\n${t(userId).chooseStyle}`, {
-    reply_markup: STYLE_KEYBOARD,
-  }).catch(() => ctx.reply(t(userId).chooseStyle, { reply_markup: STYLE_KEYBOARD }));
+  const roomLabel = getRoomLabel(roomKey, lang);
+  await ctx.editMessageText(`${roomLabel} ✓\n\n${t(userId).chooseStyle}`, {
+    reply_markup: getStyleKeyboard(lang),
+  }).catch(() => ctx.reply(t(userId).chooseStyle, { reply_markup: getStyleKeyboard(lang) }));
 });
 
-// Style selected → generate
+// Style selected → upload photo → generate → reply with result
 bot.action(/^style:(.+)$/, async (ctx) => {
   const styleKey = ctx.match[1];
   const style    = STYLES[styleKey];
   const userId   = ctx.from.id;
+  const lang     = getLang(userId);
 
   await ctx.answerCbQuery();
 
-  if (!style) {
-    return ctx.reply(t(userId).unknownStyle);
-  }
+  if (!style) return ctx.reply(t(userId).unknownStyle, { parse_mode: "MarkdownV2" });
 
   const pending = getPending(userId);
-  if (!pending) {
-    return ctx.reply(t(userId).expired);
-  }
+  if (!pending) return ctx.reply(t(userId).expired, { parse_mode: "MarkdownV2" });
 
   const { fileId, roomType } = pending;
-  const room = ROOM_TYPES[roomType] || ROOM_TYPES.living; // fallback if somehow unset
+  const room = ROOM_TYPES[roomType] || ROOM_TYPES.living;
   clearPending(userId);
 
-  // Build a room-aware prompt: prepend the room type so the model knows the context
+  const roomLabel  = getRoomLabel(roomType || "living", lang);
+  const styleLabel = getStyleLabel(styleKey, lang);
   const fullPrompt = `${room.prompt}, ${style.prompt}`;
 
-  await ctx.editMessageText(t(userId).generating(room.label, style.label))
-    .catch(() => ctx.reply(t(userId).generating(room.label, style.label)));
+  await ctx.editMessageText(t(userId).generating(roomLabel, styleLabel), { parse_mode: "MarkdownV2" })
+    .catch(() =>
+      ctx.reply(t(userId).generating(roomLabel, styleLabel), { parse_mode: "MarkdownV2" })
+    );
 
   try {
     const fileLink = await ctx.telegram.getFileLink(fileId);
-    console.log(`[action] downloading photo for user=${userId}...`);
+    console.log(`[style] downloading photo user=${userId}...`);
     const res = await fetch(fileLink.href);
     if (!res.ok) throw new Error(`Telegram download failed: ${res.status}`);
     const buf = Buffer.from(await res.arrayBuffer());
-    console.log(`[action] downloaded ${buf.length} bytes`);
+    console.log(`[style] downloaded ${buf.length} bytes`);
 
     const originalImageUrl  = await uploadImage(buf);
     const generatedImageUrl = await runEdit(originalImageUrl, fullPrompt);
@@ -452,75 +567,83 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-    // Store both URLs — originalImageUrl for reference, generatedImageUrl for cumulative edits
     setLastResult(userId, originalImageUrl, generatedImageUrl, fullPrompt);
 
     await ctx.replyWithPhoto(generatedImageUrl, {
-      caption: t(userId).result(style.label, remaining),
+      caption:    t(userId).result(styleLabel, remaining),
+      parse_mode: "MarkdownV2",
     });
 
-    const encodedUrls = encodeURIComponent(JSON.stringify([generatedImageUrl]));
+    const miniAppData = encodeURIComponent(JSON.stringify({
+      original:  originalImageUrl,
+      generated: generatedImageUrl,
+      style:     styleLabel,
+    }));
     await ctx.reply(t(userId).gallery, {
+      parse_mode:   "MarkdownV2",
       reply_markup: {
         inline_keyboard: [[
-          { text: t(userId).galleryBtn, web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
+          { text: t(userId).galleryBtn, web_app: { url: `${APP_URL}?data=${miniAppData}` } },
         ]],
       },
     });
 
-    // Invite further customization via text
-    await ctx.reply(t(userId).customizePrompt);
+    await ctx.reply(t(userId).customizePrompt, { parse_mode: "MarkdownV2" });
 
   } catch (err) {
-    console.error("[action] generation failed:", err.message);
+    console.error("[style] generation failed:", err.message);
     await ctx.reply(t(userId).error(err.message));
   }
 });
 
-// Plain text — either a customization request or a fallback prompt
+// Plain text → customization request or fallback
 bot.on(message("text"), async (ctx) => {
-  const userId  = ctx.from.id;
-  const text    = ctx.message.text;
+  const userId = ctx.from.id;
+  const text   = ctx.message.text;
 
-  if (text.startsWith("/")) return; // handled by command handlers
+  if (text.startsWith("/")) return;
 
-  // If the user has a recent result, treat their message as a customization request
   const last = getLastResult(userId);
   if (last) {
     if (getUsage(userId) >= FREE_LIMIT) {
-      return ctx.reply(t(userId).limitReached);
+      return ctx.reply(t(userId).limitReached, { parse_mode: "MarkdownV2" });
     }
 
-    const statusMsg = await ctx.reply(t(userId).customizeGenerating(text));
+    const statusMsg = await ctx.reply(t(userId).customizeGenerating(text), { parse_mode: "MarkdownV2" });
 
     try {
-      // Edit the last generated image so changes are cumulative
       const customizePrompt = `${text}, keep everything else the same, photorealistic interior design`;
-      console.log(`[customize] user=${userId} request="${text}"`);
+      console.log(`[customize] user=${userId} — "${text}"`);
 
+      // Edit the last generated image so changes are cumulative
       const newGeneratedUrl = await runEdit(last.generatedImageUrl, customizePrompt);
 
       const newCount  = incUsage(userId);
       const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-      // Keep originalImageUrl, update generatedImageUrl so next edit builds on this one
+      // Preserve originalImageUrl; update generatedImageUrl for next round
       setLastResult(userId, last.originalImageUrl, newGeneratedUrl, customizePrompt);
 
       await ctx.replyWithPhoto(newGeneratedUrl, {
-        caption: t(userId).customizeResult(remaining),
+        caption:    t(userId).customizeResult(remaining),
+        parse_mode: "MarkdownV2",
       });
 
-      const encodedUrls = encodeURIComponent(JSON.stringify([newGeneratedUrl]));
+      const miniAppData = encodeURIComponent(JSON.stringify({
+        original:  last.originalImageUrl,
+        generated: newGeneratedUrl,
+        style:     text,
+      }));
       await ctx.reply(t(userId).gallery, {
+        parse_mode:   "MarkdownV2",
         reply_markup: {
           inline_keyboard: [[
-            { text: t(userId).galleryBtn, web_app: { url: `${APP_URL}?images=${encodedUrls}` } },
+            { text: t(userId).galleryBtn, web_app: { url: `${APP_URL}?data=${miniAppData}` } },
           ]],
         },
       });
 
-      // Offer another round of customization
-      await ctx.reply(t(userId).customizePrompt);
+      await ctx.reply(t(userId).customizePrompt, { parse_mode: "MarkdownV2" });
 
     } catch (err) {
       console.error("[customize] failed:", err.message);
@@ -532,8 +655,8 @@ bot.on(message("text"), async (ctx) => {
     return;
   }
 
-  // No recent result — prompt the user to send a photo first
-  return ctx.reply(t(userId).sendPhoto);
+  // No recent result — guide user to send a photo
+  return ctx.reply(t(userId).sendPhoto, { parse_mode: "MarkdownV2" });
 });
 
 // ── Express ───────────────────────────────────
@@ -542,13 +665,13 @@ const app = express();
 app.use(express.json());
 
 app.post("/webhook", (req, res) => {
-  console.log("[webhook] update:", JSON.stringify(req.body));
+  console.log("[webhook] update_id:", req.body?.update_id);
   res.sendStatus(200);
   bot.handleUpdate(req.body);
 });
 
 app.use(express.static(path.join(__dirname, "public")));
-app.get("/health", (_req, res) => res.json({ status: "ok" }));
+app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
 
 // ── Start ─────────────────────────────────────
 app.listen(PORT, async () => {
