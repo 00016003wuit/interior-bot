@@ -200,27 +200,27 @@ const BASE    = `preserve original room structure, same walls same windows same 
 const STYLES = {
   modern: {
     label:  "🏙️ Modern Minimalist",
-    prompt: `modern minimalist interior design, bright lighting, clean walls, neutral palette, simple furniture, ${BASE}`,
+    prompt: `modern minimalist interior design, clean lines, neutral palette of white and warm grey, polished concrete floors, recessed LED lighting, floating furniture, built-in storage, large floor-to-ceiling windows with sheer linen curtains, indoor plants, abstract wall art, professional interior photography, Pinterest worthy, architectural digest quality, 8k uhd, ultra sharp, ${BASE}`,
   },
   hitech: {
     label:  "🤖 Hi-Tech / Futuristic",
-    prompt: `futuristic hi-tech interior design, smart home, LED accent lighting, metallic surfaces, sleek furniture, ${BASE}`,
+    prompt: `futuristic smart home interior, glossy surfaces, ambient RGB LED strip lighting, dark charcoal and electric blue palette, sleek metallic furniture, glass and steel elements, integrated screens on walls, wireless charging stations, floating shelves, minimal clutter, cyberpunk inspired luxury, professional interior photography, Pinterest worthy, 8k uhd, ultra sharp, ${BASE}`,
   },
   contemporary: {
     label:  "🏛️ Contemporary",
-    prompt: `contemporary interior design, elegant furniture, warm tones, layered textures, refined decor, ${BASE}`,
+    prompt: `contemporary luxury interior design, warm earthy tones, terracotta and cream palette, textured boucle sofa, brass and gold accents, arched doorways, statement pendant lighting, layered rugs, velvet throw pillows, large abstract paintings, dried pampas grass decor, professional interior photography, Pinterest worthy, architectural digest quality, 8k uhd, ${BASE}`,
   },
   scandinavian: {
     label:  "🌿 Scandinavian",
-    prompt: `Scandinavian interior design, cozy hygge atmosphere, light wood furniture, white walls, natural textures, wool textiles, ${BASE}`,
+    prompt: `Scandinavian hygge interior design, cozy warm atmosphere, white walls with natural wood accents, herringbone oak floors, sheepskin throws, knitted blankets, candles, hanging rattan pendant lights, fiddle leaf fig plant, linen curtains, minimalist functional furniture, soft warm lighting, professional interior photography, Pinterest worthy, 8k uhd, ultra sharp, ${BASE}`,
   },
   mixed: {
     label:  "🎨 Mixed Materials",
-    prompt: `mixed materials interior design, concrete and wood and metal accents, brick details, eclectic decor, ${BASE}`,
+    prompt: `eclectic mixed materials interior design, exposed brick wall combined with marble surfaces, warm walnut wood furniture mixed with black metal frames, woven rattan light fixture, Persian rug, gallery wall with mixed frames, leather sofa, ceramic vases, copper accents, layered textures, professional interior photography, Pinterest worthy, 8k uhd, ${BASE}`,
   },
   oriental: {
     label:  "🕌 Oriental / Eastern",
-    prompt: `oriental eastern interior design, rich fabrics, ornate patterns, warm amber lighting, traditional wooden furniture, decorative lanterns, ${BASE}`,
+    prompt: `luxury oriental interior design, deep jewel tones, emerald green and gold palette, ornate geometric tile patterns, carved wooden screens, silk cushions with intricate embroidery, Arabic lanterns casting warm patterns, low seating with floor cushions, zellige tile feature wall, carved plaster details, indoor fountain, professional interior photography, Pinterest worthy, 8k uhd, ${BASE}`,
   },
 };
 
@@ -311,7 +311,7 @@ async function generateDesign(imageDataUri, prompt) {
       input: {
         image:               imageDataUri,
         prompt,
-        negative_prompt:     "lowres, watermark, text, people, deformed, blurry, low quality, pixelated, low resolution, jpeg artifacts, noise, grainy, door, window, archway, opening, additional rooms, extra walls, structural changes, new architectural elements",
+        negative_prompt:     "blurry, low quality, pixelated, watermark, text, people, deformed, ugly, cartoon, anime, painting, sketch, drawing, unrealistic, low resolution, grainy, noise, overexposed, underexposed, bad proportions",
         guidance_scale:      20,
         prompt_strength:     0.5,
         num_inference_steps: 100,
