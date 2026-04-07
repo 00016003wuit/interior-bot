@@ -268,14 +268,14 @@ function clearPending(userId) {
 }
 
 // ── Last result store ─────────────────────────
-// After each generation, store the output URL + prompt so the user can
-// send a text customization request and we can regenerate from it.
-// Keyed by userId. Expires after 30 minutes of inactivity.
-const lastResults  = new Map(); // userId → { imageUrl, prompt, expiresAt }
+// Stores originalImageUrl (fal.ai storage URL of the room photo) and
+// generatedImageUrl (last AI output) so customizations build cumulatively
+// on top of the previous generation rather than re-generating from scratch.
+const lastResults  = new Map(); // userId → { originalImageUrl, generatedImageUrl, prompt, expiresAt }
 const RESULT_TTL   = 30 * 60 * 1000;
 
-function setLastResult(userId, imageUrl, prompt, imageBuffer) {
-  lastResults.set(userId, { imageUrl, prompt, imageBuffer, expiresAt: Date.now() + RESULT_TTL });
+function setLastResult(userId, originalImageUrl, generatedImageUrl, prompt) {
+  lastResults.set(userId, { originalImageUrl, generatedImageUrl, prompt, expiresAt: Date.now() + RESULT_TTL });
 }
 function getLastResult(userId) {
   const entry = lastResults.get(userId);
@@ -305,17 +305,21 @@ function incUsage(userId) {
 }
 
 // ── fal.ai ────────────────────────────────────
-async function generateDesign(imageBuffer, prompt) {
+
+// Upload a Buffer to fal.ai storage and return the public URL.
+async function uploadImage(buffer) {
+  console.log(`[fal] uploading image (${buffer.length} bytes)...`);
+  const blob = new Blob([buffer], { type: "image/jpeg" });
+  const url  = await fal.storage.upload(blob);
+  console.log(`[fal] uploaded: ${url}`);
+  return url;
+}
+
+// Run Nano Banana edit on an existing image URL with the given prompt.
+// Returns the URL of the generated image.
+async function runEdit(imageUrl, prompt) {
   const stylePrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
-
-  // Upload image buffer to fal.ai storage → get a public URL the model can read
-  console.log(`[fal] uploading image (${imageBuffer.length} bytes)...`);
-  const imageBlob = new Blob([imageBuffer], { type: "image/jpeg" });
-  const imageUrl  = await fal.storage.upload(imageBlob);
-  console.log(`[fal] uploaded: ${imageUrl}`);
-
-  // Generate redesign using Nano Banana
-  console.log(`[fal] generating with prompt: "${stylePrompt.slice(0, 60)}..."`);
+  console.log(`[fal] generating with prompt: "${stylePrompt.slice(0, 80)}..."`);
   const result = await fal.subscribe("fal-ai/nano-banana/edit", {
     input: {
       prompt:        stylePrompt,
@@ -325,7 +329,6 @@ async function generateDesign(imageBuffer, prompt) {
       output_format: "jpeg",
     },
   });
-
   const finalUrl = result.data.images[0].url;
   console.log(`[fal] done: ${finalUrl}`);
   return finalUrl;
@@ -443,19 +446,20 @@ bot.action(/^style:(.+)$/, async (ctx) => {
     const buf = Buffer.from(await res.arrayBuffer());
     console.log(`[action] downloaded ${buf.length} bytes`);
 
-    const imageUrl  = await generateDesign(buf, fullPrompt);
+    const originalImageUrl  = await uploadImage(buf);
+    const generatedImageUrl = await runEdit(originalImageUrl, fullPrompt);
 
     const newCount  = incUsage(userId);
     const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-    // Store result — keep the original buffer so customizations re-use the room photo, not the AI output
-    setLastResult(userId, imageUrl, fullPrompt, buf);
+    // Store both URLs — originalImageUrl for reference, generatedImageUrl for cumulative edits
+    setLastResult(userId, originalImageUrl, generatedImageUrl, fullPrompt);
 
-    await ctx.replyWithPhoto(imageUrl, {
+    await ctx.replyWithPhoto(generatedImageUrl, {
       caption: t(userId).result(style.label, remaining),
     });
 
-    const encodedUrls = encodeURIComponent(JSON.stringify([imageUrl]));
+    const encodedUrls = encodeURIComponent(JSON.stringify([generatedImageUrl]));
     await ctx.reply(t(userId).gallery, {
       reply_markup: {
         inline_keyboard: [[
@@ -490,24 +494,23 @@ bot.on(message("text"), async (ctx) => {
     const statusMsg = await ctx.reply(t(userId).customizeGenerating(text));
 
     try {
-      // Build combined prompt: original style + user's specific request
-      const refinedPrompt = `${last.prompt}, ${text}, preserve room structure`;
+      // Edit the last generated image so changes are cumulative
+      const customizePrompt = `${text}, keep everything else the same, photorealistic interior design`;
       console.log(`[customize] user=${userId} request="${text}"`);
 
-      // Always use the ORIGINAL room photo buffer as input, not the AI-generated output
-      const newImageUrl = await generateDesign(last.imageBuffer, refinedPrompt);
+      const newGeneratedUrl = await runEdit(last.generatedImageUrl, customizePrompt);
 
       const newCount  = incUsage(userId);
       const remaining = Math.max(0, FREE_LIMIT - newCount);
 
-      // Keep the original buffer so further customizations still use the original photo
-      setLastResult(userId, newImageUrl, refinedPrompt, last.imageBuffer);
+      // Keep originalImageUrl, update generatedImageUrl so next edit builds on this one
+      setLastResult(userId, last.originalImageUrl, newGeneratedUrl, customizePrompt);
 
-      await ctx.replyWithPhoto(newImageUrl, {
+      await ctx.replyWithPhoto(newGeneratedUrl, {
         caption: t(userId).customizeResult(remaining),
       });
 
-      const encodedUrls = encodeURIComponent(JSON.stringify([newImageUrl]));
+      const encodedUrls = encodeURIComponent(JSON.stringify([newGeneratedUrl]));
       await ctx.reply(t(userId).gallery, {
         reply_markup: {
           inline_keyboard: [[
