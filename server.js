@@ -13,7 +13,7 @@ const REPLICATE_TOKEN = process.env.REPLICATE_API_TOKEN;
 const WEBHOOK_URL     = process.env.WEBHOOK_URL;
 const PORT            = process.env.PORT || 3000;
 const APP_URL         = process.env.APP_URL || WEBHOOK_URL;
-const FREE_LIMIT      = 10;
+const FREE_LIMIT      = 5;
 
 console.log("TELEGRAM_BOT_TOKEN :", TOKEN           ? TOKEN.slice(0, 8) + "..."           : "MISSING");
 console.log("REPLICATE_API_TOKEN:", REPLICATE_TOKEN ? REPLICATE_TOKEN.slice(0, 4) + "..." : "MISSING");
@@ -36,8 +36,8 @@ const T = {
       "2️⃣ Choose your room type\n" +
       "3️⃣ Pick a design style\n" +
       "4️⃣ Get your AI redesign in seconds!\n\n" +
-      "✨ First 10 requests are FREE\n" +
-      "💳 After that: only 1,000 UZS per design\n\n" +
+      "✨ First 5 requests are FREE\n" +
+      "💳 After that: only 3,000 UZS per design\n\n" +
       "Ready? Send me a photo to get started! 📸",
     sendPhoto:       "📸 Send me a photo of your room to get started!",
     chooseRoom:      "What type of room is this?",
@@ -47,7 +47,7 @@ const T = {
     gallery:         "🖼 View full-size in the gallery:",
     galleryBtn:      "🎨 Open Gallery",
     expired:         "⚠️ Your photo has expired (10 min limit). Please send it again.",
-    limitReached:    `You've used all ${FREE_LIMIT} free requests.\n\nTo continue, please pay 1000 UZS via Click, Payme or Uzum.\nContact support after payment to unlock more requests.`,
+    limitReached:    `You've used all ${FREE_LIMIT} free requests.\n\nTo continue, please pay 3000 UZS via Click, Payme or Uzum.\nContact support after payment to unlock more requests.`,
     usage:           (used, remaining) => `Used: ${used} / ${FREE_LIMIT}\nFree remaining: ${remaining}`,
     error:           (msg) => `❌ Something went wrong: ${msg}\n\nPlease try again.`,
     unknownStyle:    "Unknown style. Please send a photo again.",
@@ -72,8 +72,8 @@ const T = {
       "2️⃣ Выберите тип комнаты\n" +
       "3️⃣ Выберите стиль дизайна\n" +
       "4️⃣ Получите редизайн за секунды!\n\n" +
-      "✨ Первые 10 запросов БЕСПЛАТНО\n" +
-      "💳 Далее: всего 1 000 UZS за дизайн\n\n" +
+      "✨ Первые 5 запросов БЕСПЛАТНО\n" +
+      "💳 Далее: всего 3 000 UZS за дизайн\n\n" +
       "Готовы? Отправьте фото! 📸",
     sendPhoto:       "📸 Отправьте мне фото вашей комнаты, чтобы начать!",
     chooseRoom:      "Какой тип комнаты на фото?",
@@ -83,7 +83,7 @@ const T = {
     gallery:         "🖼 Открыть в полном размере:",
     galleryBtn:      "🎨 Открыть галерею",
     expired:         "⚠️ Время ожидания вашего фото истекло (10 мин). Пожалуйста, отправьте фото снова.",
-    limitReached:    `Вы использовали все ${FREE_LIMIT} бесплатных запросов.\n\nДля продолжения оплатите 1000 UZS через Click, Payme или Uzum.\nСвяжитесь с поддержкой после оплаты.`,
+    limitReached:    `Вы использовали все ${FREE_LIMIT} бесплатных запросов.\n\nДля продолжения оплатите 3000 UZS через Click, Payme или Uzum.\nСвяжитесь с поддержкой после оплаты.`,
     usage:           (used, remaining) => `Использовано: ${used} / ${FREE_LIMIT}\nОсталось бесплатных: ${remaining}`,
     error:           (msg) => `❌ Что-то пошло не так: ${msg}\n\nПожалуйста, попробуйте ещё раз.`,
     unknownStyle:    "Неизвестный стиль. Пожалуйста, отправьте фото снова.",
@@ -108,8 +108,8 @@ const T = {
       "2️⃣ Xona turini tanlang\n" +
       "3️⃣ Dizayn uslubini tanlang\n" +
       "4️⃣ Soniyalar ichida AI dizaynini oling!\n\n" +
-      "✨ Birinchi 10 ta so'rov BEPUL\n" +
-      "💳 Keyin: har bir dizayn uchun atigi 1 000 UZS\n\n" +
+      "✨ Birinchi 5 ta so'rov BEPUL\n" +
+      "💳 Keyin: har bir dizayn uchun atigi 3 000 UZS\n\n" +
       "Tayyor? Rasm yuboring! 📸",
     sendPhoto:       "📸 Boshlash uchun xonangizning rasmini yuboring!",
     chooseRoom:      "Bu qanday xona turi?",
@@ -119,7 +119,7 @@ const T = {
     gallery:         "🖼 To'liq o'lchamda ko'rish:",
     galleryBtn:      "🎨 Galereyani ochish",
     expired:         "⚠️ Rasmingiz vaqti tugadi (10 daqiqa). Iltimos, rasmni qayta yuboring.",
-    limitReached:    `Siz barcha ${FREE_LIMIT} ta bepul so'rovdan foydalandingiz.\n\nDavom etish uchun Click, Payme yoki Uzum orqali 1000 UZS to'lang.\nTo'lovdan keyin qo'llab-quvvatlash xizmati bilan bog'laning.`,
+    limitReached:    `Siz barcha ${FREE_LIMIT} ta bepul so'rovdan foydalandingiz.\n\nDavom etish uchun Click, Payme yoki Uzum orqali 3000 UZS to'lang.\nTo'lovdan keyin qo'llab-quvvatlash xizmati bilan bog'laning.`,
     usage:           (used, remaining) => `Ishlatildi: ${used} / ${FREE_LIMIT}\nQoldi bepul: ${remaining}`,
     error:           (msg) => `❌ Xatolik yuz berdi: ${msg}\n\nIltimos, qayta urining.`,
     unknownStyle:    "Noma'lum uslub. Iltimos, rasmni qayta yuboring.",
@@ -304,13 +304,42 @@ function incUsage(userId) {
 const replicate = new Replicate({ auth: REPLICATE_TOKEN });
 
 async function generateDesign(imageDataUri, prompt) {
-  console.log(`[replicate] generating with prompt: "${prompt.slice(0, 60)}..."`);
-  const output = await replicate.run(
-    "bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
+  const enhancedPrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
+
+  // ── Step 1: adirik/interior-design ───────────
+  // Room-aware redesign — preserves walls, windows, doors while changing decor.
+  console.log(`[replicate] step 1 — interior-design: "${prompt.slice(0, 60)}..."`);
+  const step1Output = await replicate.run(
+    "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
     {
       input: {
         image:               imageDataUri,
-        prompt:              `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`,
+        prompt:              enhancedPrompt,
+        negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
+        guidance_scale:      15,
+        prompt_strength:     0.5,
+        num_inference_steps: 50,
+      },
+    }
+  );
+  const step1Url = Array.isArray(step1Output) ? step1Output[0] : String(step1Output);
+  console.log(`[replicate] step 1 done: ${step1Url}`);
+
+  // ── Step 2: sdxl-lightning-4step ─────────────
+  // Quality enhancement pass — sharpens and upscales the interior-design output.
+  // Download the step 1 result and convert to base64 for the next model.
+  console.log(`[replicate] step 2 — sdxl-lightning enhance...`);
+  const res = await fetch(step1Url);
+  if (!res.ok) throw new Error(`Step 2 download failed: ${res.status}`);
+  const buf        = Buffer.from(await res.arrayBuffer());
+  const step1DataUri = `data:image/jpeg;base64,${buf.toString("base64")}`;
+
+  const step2Output = await replicate.run(
+    "bytedance/sdxl-lightning-4step:5599ed30703defd1d160a25a63321b4dec97101d98b4674bcc56e41f62f35637",
+    {
+      input: {
+        image:               step1DataUri,
+        prompt:              enhancedPrompt,
         negative_prompt:     "blurry, low quality, people, text, watermark, deformed, ugly",
         num_outputs:         1,
         num_inference_steps: 4,
@@ -319,9 +348,9 @@ async function generateDesign(imageDataUri, prompt) {
       },
     }
   );
-  const url = output[0];
-  console.log(`[replicate] done: ${url}`);
-  return url;
+  const finalUrl = step2Output[0];
+  console.log(`[replicate] step 2 done: ${finalUrl}`);
+  return finalUrl;
 }
 
 // ── Bot ───────────────────────────────────────
