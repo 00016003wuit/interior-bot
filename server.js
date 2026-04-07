@@ -306,19 +306,19 @@ const replicate = new Replicate({ auth: REPLICATE_TOKEN });
 async function generateDesign(imageDataUri, prompt) {
   console.log(`[replicate] generating with prompt: "${prompt.slice(0, 60)}..."`);
   const output = await replicate.run(
-    "adirik/interior-design:76604baddc85b1b4616e1c6475eca080da339c8875bd4996705440484a6eac38",
+    "lucataco/sdxl-img2img:a38a4c7e5dc80048b76ce4e8ec1749e41c21c2e8bcd66490b8e1c00f33b25cef",
     {
       input: {
         image:               imageDataUri,
-        prompt,
-        negative_prompt:     "blurry, low quality, pixelated, watermark, text, people, deformed, ugly, cartoon, anime, painting, sketch, drawing, unrealistic, low resolution, grainy, noise, overexposed, underexposed, bad proportions",
-        guidance_scale:      20,
-        prompt_strength:     0.5,
-        num_inference_steps: 100,
+        prompt:              `${prompt}, pinterest interior design, architectural digest, luxury home, professional photography`,
+        negative_prompt:     "blurry, low quality, people, text, watermark, deformed",
+        strength:            0.7,
+        guidance_scale:      7.5,
+        num_inference_steps: 50,
       },
     }
   );
-  const url = Array.isArray(output) ? output[0] : String(output);
+  const url = output[0];
   console.log(`[replicate] done: ${url}`);
   return url;
 }
