@@ -623,7 +623,10 @@ bot.on(message("text"), async (ctx) => {
       // Download the last generated image fresh, then re-upload to fal.ai storage
       // so the model always receives a clean, accessible URL (not a potentially expiring one)
       const dlRes = await fetch(last.generatedImageUrl);
-      if (!dlRes.ok) throw new Error(`Failed to download previous image: ${dlRes.status}`);
+      if (!dlRes.ok) {
+        console.error(`[customize] image download failed: HTTP ${dlRes.status} for ${last.generatedImageUrl}`);
+        throw new Error(`Could not load your previous design image (HTTP ${dlRes.status}). Please send a new photo and try again.`);
+      }
       const dlBuf = Buffer.from(await dlRes.arrayBuffer());
       console.log(`[customize] image download complete: ${dlBuf.length} bytes`);
       const freshUrl = await uploadImage(dlBuf);
