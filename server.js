@@ -612,11 +612,17 @@ bot.on(message("text"), async (ctx) => {
     const statusMsg = await ctx.reply(t(userId).customizeGenerating(text), { parse_mode: "MarkdownV2" });
 
     try {
-      const customizePrompt = `${text}, keep everything else the same, photorealistic interior design`;
-      console.log(`[customize] user=${userId} — "${text}"`);
+      // Targeted-edit prompt: describe only the specific change, preserve everything else
+      const editPrompt = `Edit this interior design photo: ${text}. Keep the exact same room layout, same furniture positions, same lighting. Only change the specific item mentioned. Maintain photorealistic quality. Do not change anything else.`;
 
-      // Edit the last generated image so changes are cumulative
-      const newGeneratedUrl = await runEdit(last.generatedImageUrl, customizePrompt);
+      // Download the last generated image fresh, then re-upload to fal.ai storage
+      // so the model always receives a clean, accessible URL (not a potentially expiring one)
+      const dlRes = await fetch(last.generatedImageUrl);
+      if (!dlRes.ok) throw new Error(`Failed to download previous image: ${dlRes.status}`);
+      const dlBuf = Buffer.from(await dlRes.arrayBuffer());
+      const freshUrl = await uploadImage(dlBuf);
+
+      const newGeneratedUrl = await runEdit(freshUrl, editPrompt);
 
       const newCount  = incUsage(userId);
       const remaining = Math.max(0, FREE_LIMIT - newCount);
