@@ -473,12 +473,18 @@ bot.action("action:sendphoto", async (ctx) => {
   await ctx.editMessageText(t(userId).sendPhoto, { parse_mode: "MarkdownV2" });
 });
 
-// /usage
+// /usage — show remaining free designs with a visual progress bar
 bot.command("usage", async (ctx) => {
   const userId    = ctx.from.id;
   const used      = getUsage(userId);
   const remaining = Math.max(0, FREE_LIMIT - used);
-  return ctx.reply(t(userId).usage(used, remaining), { parse_mode: "MarkdownV2" });
+  const filled    = Math.min(used, FREE_LIMIT);
+  const bar       = "🟪".repeat(filled) + "⬜".repeat(Math.max(0, FREE_LIMIT - filled));
+  const base      = t(userId).usage(used, remaining);
+  const extra     = remaining === 0
+    ? "\n\n💳 Pay 10,000 UZS via Click, Payme or Uzum to unlock 3 more\\."
+    : "";
+  return ctx.reply(`${base}\n\n${bar}${extra}`, { parse_mode: "MarkdownV2" });
 });
 
 // /help — explain how to use the bot
