@@ -612,6 +612,8 @@ bot.on(message("text"), async (ctx) => {
     const statusMsg = await ctx.reply(t(userId).customizeGenerating(text), { parse_mode: "MarkdownV2" });
 
     try {
+      console.log(`[customize] START user=${userId} request="${text}"`);
+
       // Targeted-edit prompt: instruct the model to change ONLY the specific item the user
       // mentioned (e.g. "make carpet white") and leave the entire rest of the room untouched.
       // Leading with "Edit this interior design photo:" anchors the model to the existing image
