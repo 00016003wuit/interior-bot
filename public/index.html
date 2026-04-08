@@ -958,4 +958,114 @@ const T = {
     startOver: "Boshidan boshlash",
   },
 };
+
+function t(key) { return T[state.lang]?.[key] || T.en[key] || key; }
+
+// ── Static data ──────────────────────────────
+const ROOMS = {
+  living:   { emoji: '\u{1F6CB}\uFE0F', en: 'Living Room',  ru: '\u0413\u043e\u0441\u0442\u0438\u043d\u0430\u044f',   uz: 'Mehmonxona' },
+  bedroom:  { emoji: '\u{1F6CF}\uFE0F', en: 'Bedroom',      ru: '\u0421\u043f\u0430\u043b\u044c\u043d\u044f',    uz: 'Yotoqxona' },
+  kitchen:  { emoji: '\u{1F373}', en: 'Kitchen',      ru: '\u041a\u0443\u0445\u043d\u044f',      uz: 'Oshxona' },
+  bathroom: { emoji: '\u{1F6C1}', en: 'Bathroom',     ru: '\u0412\u0430\u043d\u043d\u0430\u044f',     uz: 'Hammom' },
+  office:   { emoji: '\u{1F3E2}', en: 'Office',       ru: '\u041e\u0444\u0438\u0441',       uz: 'Ofis' },
+  dining:   { emoji: '\u{1F37D}\uFE0F', en: 'Dining Room',  ru: '\u0421\u0442\u043e\u043b\u043e\u0432\u0430\u044f',   uz: 'Ovqat xonasi' },
+};
+
+const GOALS = {
+  cozy:       { emoji: '\u{1F525}', en: 'Cozy & Comfortable',    ru: '\u0423\u044e\u0442\u043d\u044b\u0439 \u0438 \u043a\u043e\u043c\u0444\u043e\u0440\u0442\u043d\u044b\u0439',      uz: 'Qulay va shinam' },
+  premium:    { emoji: '\u{1F48E}', en: 'Modern & Premium',       ru: '\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0439 \u0438 \u043f\u0440\u0435\u043c\u0438\u0443\u043c',    uz: 'Zamonaviy va premium' },
+  budget:     { emoji: '\u{1F4B0}', en: 'Budget-Friendly',        ru: '\u0411\u044e\u0434\u0436\u0435\u0442\u043d\u044b\u0439',                uz: 'Byudjetga mos' },
+  productive: { emoji: '\u{1F4BB}', en: 'Productive Workspace',   ru: '\u041f\u0440\u043e\u0434\u0443\u043a\u0442\u0438\u0432\u043d\u043e\u0435 \u0440\u0430\u0431\u043e\u0447\u0435\u0435',     uz: 'Samarali ish joyi' },
+  sleep:      { emoji: '\u{1F319}', en: 'Better Sleep',           ru: '\u041b\u0443\u0447\u0448\u0438\u0439 \u0441\u043e\u043d',               uz: 'Yaxshi uyqu' },
+  spacious:   { emoji: '\u{1F324}\uFE0F', en: 'Spacious Feel',    ru: '\u041e\u0449\u0443\u0449\u0435\u043d\u0438\u0435 \u043f\u0440\u043e\u0441\u0442\u043e\u0440\u0430',        uz: 'Kenglik hissi' },
+  rental:     { emoji: '\u{1F3D8}\uFE0F', en: 'Rental/Resale Value', ru: '\u0414\u043b\u044f \u0430\u0440\u0435\u043d\u0434\u044b/\u043f\u0440\u043e\u0434\u0430\u0436\u0438',       uz: 'Ijara/sotish uchun' },
+  family:     { emoji: '\u{1F468}\u200D\u{1F469}\u200D\u{1F467}\u200D\u{1F466}', en: 'Family-Friendly', ru: '\u0414\u043b\u044f \u0441\u0435\u043c\u044c\u0438', uz: 'Oila uchun' },
+};
+
+const BUDGETS = {
+  low:     { en: 'Under $300',      ru: '\u0414\u043e $300',        uz: '$300 gacha' },
+  mid:     { en: '$300 \u2013 $1,000',   ru: '$300 \u2013 $1 000',  uz: '$300 \u2013 $1,000' },
+  high:    { en: '$1,000 \u2013 $5,000', ru: '$1 000 \u2013 $5 000',uz: '$1,000 \u2013 $5,000' },
+  premium: { en: '$5,000+',         ru: '$5 000+',        uz: '$5,000+' },
+};
+
+const PRIORITIES = {
+  coziness:     { emoji: '\u{1F6CB}\uFE0F', en: 'Coziness',       ru: '\u0423\u044e\u0442',              uz: 'Qulaylik' },
+  storage:      { emoji: '\u{1F4E6}', en: 'Storage',         ru: '\u0425\u0440\u0430\u043d\u0435\u043d\u0438\u0435',         uz: 'Saqlash' },
+  lighting:     { emoji: '\u{1F4A1}', en: 'Lighting',        ru: '\u041e\u0441\u0432\u0435\u0449\u0435\u043d\u0438\u0435',        uz: 'Yoritish' },
+  workspace:    { emoji: '\u{1F5A5}\uFE0F', en: 'Workspace',  ru: '\u0420\u0430\u0431\u043e\u0447\u0430\u044f \u0437\u043e\u043d\u0430',     uz: 'Ish joyi' },
+  premium_look: { emoji: '\u2728', en: 'Premium Look',    ru: '\u041f\u0440\u0435\u043c\u0438\u0443\u043c \u0432\u0438\u0434',      uz: 'Premium ko\'rinish' },
+  easy_clean:   { emoji: '\u{1F9F9}', en: 'Easy Cleaning',   ru: '\u041b\u0451\u0433\u043a\u0430\u044f \u0443\u0431\u043e\u0440\u043a\u0430',    uz: 'Oson tozalash' },
+  natural_light:{ emoji: '\u2600\uFE0F', en: 'Natural Light',   ru: '\u0415\u0441\u0442\u0435\u0441\u0442\u0432\u0435\u043d\u043d\u044b\u0439 \u0441\u0432\u0435\u0442', uz: 'Tabiiy yorug\'lik' },
+  space:        { emoji: '\u{1F4D0}', en: 'More Space',      ru: '\u0411\u043e\u043b\u044c\u0448\u0435 \u043c\u0435\u0441\u0442\u0430',     uz: 'Ko\'proq joy' },
+};
+
+const STYLES = {
+  modern:        { emoji: '\u{1F3D9}\uFE0F', en: 'Modern',             ru: '\u0421\u043e\u0432\u0440\u0435\u043c\u0435\u043d\u043d\u044b\u0439',         uz: 'Zamonaviy' },
+  contemporary:  { emoji: '\u{1F3DB}\uFE0F', en: 'Contemporary',       ru: '\u041a\u043e\u043d\u0442\u0435\u043c\u043f\u043e\u0440\u0430\u0440\u0438',        uz: 'Hozirgi zamon' },
+  minimalist:    { emoji: '\u2728', en: 'Minimalist',          ru: '\u041c\u0438\u043d\u0438\u043c\u0430\u043b\u0438\u0437\u043c',          uz: 'Minimalizm' },
+  traditional:   { emoji: '\u{1F3FA}', en: 'Traditional',         ru: '\u0422\u0440\u0430\u0434\u0438\u0446\u0438\u043e\u043d\u043d\u044b\u0439',        uz: 'An\'anaviy' },
+  transitional:  { emoji: '\u{1F504}', en: 'Transitional',        ru: '\u041f\u0435\u0440\u0435\u0445\u043e\u0434\u043d\u044b\u0439',          uz: 'O\'tish davri' },
+  scandinavian:  { emoji: '\u{1F33F}', en: 'Scandinavian',        ru: '\u0421\u043a\u0430\u043d\u0434\u0438\u043d\u0430\u0432\u0441\u043a\u0438\u0439',       uz: 'Skandinaviya' },
+  japandi:       { emoji: '\u{1F38B}', en: 'Japandi',             ru: '\u0414\u0436\u0430\u043f\u0430\u043d\u0434\u0438',            uz: 'Japandi' },
+  bohemian:      { emoji: '\u{1F338}', en: 'Bohemian',            ru: '\u0411\u043e\u0433\u0435\u043c\u043d\u044b\u0439',            uz: 'Bohem' },
+  rustic:        { emoji: '\u{1FAB5}', en: 'Rustic',              ru: '\u0420\u0443\u0441\u0442\u0438\u043a',              uz: 'Rustik' },
+  farmhouse:     { emoji: '\u{1F33E}', en: 'Farmhouse',           ru: '\u0424\u0435\u0440\u043c\u0435\u0440\u0441\u043a\u0438\u0439',          uz: 'Ferma uyi' },
+  industrial:    { emoji: '\u2699\uFE0F', en: 'Industrial',          ru: '\u0418\u043d\u0434\u0443\u0441\u0442\u0440\u0438\u0430\u043b\u044c\u043d\u044b\u0439',      uz: 'Industrial' },
+  loft:          { emoji: '\u{1F3D7}\uFE0F', en: 'Loft',                ru: '\u041b\u043e\u0444\u0442',               uz: 'Loft' },
+  midcentury:    { emoji: '\u{1F570}\uFE0F', en: 'Mid-Century',         ru: '\u0421\u0435\u0440\u0435\u0434\u0438\u043d\u0430 \u0432\u0435\u043a\u0430',       uz: 'O\'rta asr zamonaviy' },
+  artdeco:       { emoji: '\u{1F48E}', en: 'Art Deco',            ru: '\u0410\u0440-\u0434\u0435\u043a\u043e',             uz: 'Art Deko' },
+  hollywoodglam: { emoji: '\u2B50', en: 'Hollywood Glam',      ru: '\u0413\u043e\u043b\u043b\u0438\u0432\u0443\u0434 \u0433\u043b\u0430\u043c\u0443\u0440',     uz: 'Gollivud glamuri' },
+  mediterranean: { emoji: '\u{1F30A}', en: 'Mediterranean',       ru: '\u0421\u0440\u0435\u0434\u0438\u0437\u0435\u043c\u043d\u043e\u043c\u043e\u0440\u0441\u043a\u0438\u0439',   uz: 'O\'rta dengiz' },
+  moroccan:      { emoji: '\u{1F54C}', en: 'Moroccan',            ru: '\u041c\u0430\u0440\u043e\u043a\u043a\u0430\u043d\u0441\u043a\u0438\u0439',        uz: 'Marokash' },
+  asianzen:      { emoji: '\u{1F343}', en: 'Asian Zen',           ru: '\u0410\u0437\u0438\u0430\u0442\u0441\u043a\u0438\u0439 \u0434\u0437\u0435\u043d',      uz: 'Osiyo Zen' },
+  eclectic:      { emoji: '\u{1F3A8}', en: 'Eclectic',            ru: '\u042d\u043a\u043b\u0435\u043a\u0442\u0438\u043a\u0430',           uz: 'Eklektik' },
+  maximalist:    { emoji: '\u{1F308}', en: 'Maximalist',          ru: '\u041c\u0430\u043a\u0441\u0438\u043c\u0430\u043b\u0438\u0437\u043c',         uz: 'Maksimalizm' },
+  biophilic:     { emoji: '\u{1F331}', en: 'Biophilic',           ru: '\u0411\u0438\u043e\u0444\u0438\u043b\u044c\u043d\u044b\u0439',          uz: 'Biofilik' },
+};
+
+function label(obj) { return obj[state.lang] || obj.en; }
+
+// ── API helpers ──────────────────────────────
+async function api(path, body) {
+  const res = await fetch(API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw { status: res.status, ...data };
+  return data;
+}
+
+// ── Screen management ────────────────────────
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  let el = document.getElementById('screen-' + name);
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'screen-' + name;
+    el.className = 'screen';
+    document.getElementById('app').appendChild(el);
+  }
+  const renderer = screens[name];
+  if (renderer) renderer(el);
+  el.classList.add('active');
+  state.currentScreen = name;
+  window.scrollTo(0, 0);
+  if (['splash', 'language'].includes(name)) tg?.BackButton?.hide();
+  else tg?.BackButton?.show();
+}
+
+// ── Screen renderers ─────────────────────────
+const screens = {};
+
+screens.language = (el) => {
+  el.innerHTML = `
+    <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 20px;">
+      <span style="font-size:64px;margin-bottom:20px;display:block;">\u{1F30D}</span>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:32px;">Choose your language</h2>
+      <div class="lang-grid">
+        <div class="lang-btn" onclick="selectLang('uz')">
+          <span class="flag">\u{1F1FA}\u{1F1FF}</span>
 </script></body></html>
