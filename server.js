@@ -538,3 +538,29 @@ bot.command("help", (ctx) => {
     "3\\. Get an AI\\-powered redesign\\!\n\n" +
     `✨ First ${FREE_LIMIT} designs FREE\n` +
     `💳 Then ${PACK_PRICE.toLocaleString()} UZS for 3 more\n\n` +
+    "/start — Open the app\n" +
+    "/usage — Check remaining designs",
+    {
+      parse_mode: "MarkdownV2",
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
+        ]],
+      },
+    }
+  );
+});
+
+// /usage
+bot.command("usage", (ctx) => {
+  const used = getUsage(ctx.from.id);
+  const remaining = Math.max(0, FREE_LIMIT - used);
+  const bar = "🟪".repeat(Math.min(used, FREE_LIMIT)) + "⬜".repeat(remaining);
+  return ctx.reply(
+    `📊 Designs: ${used}/${FREE_LIMIT}\n${bar}\n🆓 Remaining: ${remaining}`,
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
+        ]],
+      },
