@@ -1502,7 +1502,12 @@ if (tg) {
 // ── Init ─────────────────────────────────────
 async function init() {
   try {
-    const data = await api('/api/auth', { initData: tg?.initData || '' });
+    // Send initData + initDataUnsafe.user as fallback for auth
+    const authPayload = {
+      initData: tg?.initData || '',
+      user: tg?.initDataUnsafe?.user || null,
+    };
+    const data = await api('/api/auth', authPayload);
     state.user = data.user;
     state.usage = data.usage;
     if (data.user?.lang) state.lang = data.user.lang;
@@ -1515,11 +1520,23 @@ async function init() {
       showScreen('upload');
       return;
     }
-  } catch (err) { console.error('Init failed:', err); }
+  } catch (err) {
+    console.error('Init failed:', err);
+    // Still extract name from Telegram if available
+    if (tg?.initDataUnsafe?.user) {
+      const u = tg.initDataUnsafe.user;
+      state.user = { id: u.id, firstName: u.first_name || '', lastName: u.last_name || '' };
+    }
+  }
   showScreen('language');
 }
 
-setTimeout(init, 800);
+// Safety: if init takes too long, force show language screen
+const initTimeout = setTimeout(() => {
+  if (state.currentScreen === 'splash') showScreen('language');
+}, 5000);
+
+setTimeout(() => { init().finally(() => clearTimeout(initTimeout)); }, 800);
 </script>
 </body>
 </html>
