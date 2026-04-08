@@ -539,7 +539,14 @@ bot.on("contact", (ctx) => {
   const phone = ctx.message.contact.phone_number;
   console.log(`[contact] user=${userId} phone=${phone}`);
   saveUser(userId, { phone });
-  return ctx.reply("Phone number saved! ✓");
+  const user = getUser(userId);
+  const lang = user?.lang || "en";
+  const msgs = {
+    en: "✅ Phone number saved! You can go back to the app.",
+    ru: "✅ Номер телефона сохранён! Можете вернуться в приложение.",
+    uz: "✅ Telefon raqami saqlandi! Ilovaga qaytishingiz mumkin.",
+  };
+  return ctx.reply(msgs[lang] || msgs.en);
 });
 
 // /help
