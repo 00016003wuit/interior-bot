@@ -1278,4 +1278,44 @@ screens.result = (el) => {
       <div class="info-card">
         <h4>\u{1F3A8} ${t('designInfo')}</h4>
         <div class="info-row"><span class="label">${t('styleLabel')}</span><span>${sty}</span></div>
+        <div class="info-row"><span class="label">${t('goalLabel')}</span><span>${gol}</span></div>
+        <div class="info-row"><span class="label">${t('budgetLabel')}</span><span>${bud}</span></div>
+      </div>
+      <div class="info-card">
+        <h4>\u{1F4CA} ${t('usageInfo')}</h4>
+        <div class="usage-bar">${ub}</div>
+        <div class="info-row"><span class="label">${t('freeDesigns')}</span><span>${state.usage.remaining}</span></div>
+      </div>
+    </div>
+    <div style="padding:16px 20px;">
+      <button class="btn btn-secondary" onclick="startNewDesign()">\u{1F4F8} ${t('newDesign')}</button>
+    </div>`;
+  requestAnimationFrame(initSlider);
+};
+
+screens.modify = (el) => {
+  const r = state.result;
+  const sugs = [t('modifySug1'), t('modifySug2'), t('modifySug3'), t('modifySug4'), t('modifySug5'), t('modifySug6')];
+  el.innerHTML = `
+    <div class="top-bar"><div class="back-btn" onclick="goBack()">\u2190</div><div class="top-title">${t('modifyTitle')}</div></div>
+    <div class="screen-body">
+      ${r ? `<div class="modify-preview"><img src="${r.generatedUrl}" /></div>` : ''}
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px;">${t('modifyDesc')}</p>
+      <div class="modify-suggestions">${sugs.map(s => `<div class="chip" onclick="document.getElementById('mt').value='${esc(s)}';document.getElementById('mt').dispatchEvent(new Event('input'))">${s}</div>`).join('')}</div>
+      <textarea class="input-field" id="mt" placeholder="${t('modifyPlaceholder')}" oninput="document.getElementById('mbtn').disabled=!this.value.trim()"></textarea>
+      <p class="mt-8" style="font-size:12px;color:var(--text3);">${t('modifyHint')}</p>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="mbtn" disabled onclick="applyModification()">${t('applyChanges')}</button>
+    </div>`;
+};
+
+screens.limit = (el) => {
+  el.innerHTML = `
+    <div class="limit-screen">
+      <span class="limit-icon">\u{1F512}</span>
+      <div class="limit-title">${t('limitTitle')}</div>
+      <div class="limit-desc">${t('limitDesc')}</div>
+      <div class="limit-price">10,000 UZS</div>
+      <div class="limit-price-sub">${t('limitFor3')}</div>
 </script></body></html>
