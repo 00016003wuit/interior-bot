@@ -453,4 +453,49 @@
     }
     .gen-step {
       display: flex; align-items: center; gap: 10px;
+      font-size: 14px; color: var(--text3);
+      transition: var(--transition);
+    }
+    .gen-step.active { color: var(--text); }
+    .gen-step.done { color: var(--success); }
+    .gen-step-icon { width: 20px; text-align: center; }
+
+    /* ── Screen: Result ──────────────────── */
+    .result-header {
+      padding: 16px 20px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .result-header h2 { font-size: 20px; font-weight: 700; }
+
+    .comparison-container {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      overflow: hidden;
+      border-radius: var(--radius);
+      margin: 0 auto;
+      touch-action: none;
+      background: var(--surface);
+    }
+    .comparison-container img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+    }
+    .comparison-after { clip-path: inset(0 0 0 0); }
+    .comparison-before { clip-path: inset(0 50% 0 0); }
+    .comparison-slider {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 3px;
+      background: #fff;
+      cursor: ew-resize;
+      z-index: 5;
+      transform: translateX(-50%);
+    }
+    .comparison-slider::after {
+      content: "\2194";
+      position: absolute;
 </style></head><body></body></html>
