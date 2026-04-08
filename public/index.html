@@ -1407,7 +1407,8 @@ function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;',
 function selectLang(lang) {
   state.lang = lang;
   if (state.user) api('/api/user/lang', { userId: state.user.id, lang }).catch(() => {});
-  showScreen('welcome');
+  state.onboardStep = 0;
+  showScreen('onboarding');
 }
 
 function shareContact() {
