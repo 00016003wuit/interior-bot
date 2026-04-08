@@ -1368,4 +1368,44 @@ function onboardBack() { if (state.onboardStep > 0) { state.onboardStep--; showS
 function onboardNext() {
   if (state.onboardStep < 3) { state.onboardStep++; showScreen('onboarding'); }
   else { if (state.user) api('/api/user/prefs', { userId: state.user.id, prefs: state.prefs }).catch(() => {}); showScreen('upload'); }
+}
+
+function selectStyle(k) { state.selectedStyle = k; showScreen('styles'); }
+function removePhoto(i) { state.photos.splice(i, 1); showScreen('upload'); }
+function tryAnother() { state.selectedStyle = null; state.customPrompt = ''; showScreen('designMode'); }
+function startNewDesign() { state.photos = []; state.photoUrls = []; state.selectedStyle = null; state.customPrompt = ''; state.result = null; state.designMode = null; showScreen('upload'); }
+
+function shareResult() {
+  if (!state.result?.generatedUrl) return;
+  if (navigator.share) navigator.share({ title: 'My room redesign by LiveSpace AI', url: state.result.generatedUrl }).catch(() => {});
+  else { navigator.clipboard?.writeText(state.result.generatedUrl); toast('Link copied!'); }
+}
+
+function goBack() {
+  const map = { welcome:'language', onboarding:'welcome', upload:'onboarding', designMode:'upload', styles:'designMode', custom:'designMode', result:'upload', modify:'result', limit: state.result?'result':'upload', error:'upload' };
+  if (state.currentScreen === 'onboarding') onboardBack();
+  else showScreen(map[state.currentScreen] || 'upload');
+}
+
+async function refreshUser() {
+  try { const d = await api('/api/auth', { initData: tg?.initData || '' }); if (d.user) state.user = d.user; if (d.usage) state.usage = d.usage; } catch {}
+}
+
+// File input handler
+document.getElementById('file-input').addEventListener('change', (e) => {
+  Array.from(e.target.files).forEach(file => {
+    if (state.photos.length >= 3) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => { state.photos.push({ file, preview: ev.target.result }); showScreen('upload'); };
+    reader.readAsDataURL(file);
+  });
+  e.target.value = '';
+});
+
+// ── Generation ───────────────────────────────
+async function startGeneration() {
+  if (state.usage.remaining <= 0) { showScreen('limit'); return; }
+  showScreen('generating');
+  try {
+    const fd = new FormData();
 </script></body></html>
