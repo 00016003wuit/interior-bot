@@ -1353,4 +1353,19 @@ function shareContact() {
 
 function submitWelcome(skip) {
   const phone = document.getElementById('phone-input')?.value?.trim();
+  if (phone && state.user) api('/api/user/phone', { userId: state.user.id, phone }).catch(() => {});
+  state.onboardStep = 0;
+  showScreen('onboarding');
+}
+
+function selectPref(key, val) { state.prefs[key] = val; showScreen('onboarding'); }
+function togglePriority(key) {
+  const i = state.prefs.priorities.indexOf(key);
+  if (i >= 0) state.prefs.priorities.splice(i, 1); else state.prefs.priorities.push(key);
+  showScreen('onboarding');
+}
+function onboardBack() { if (state.onboardStep > 0) { state.onboardStep--; showScreen('onboarding'); } else showScreen('welcome'); }
+function onboardNext() {
+  if (state.onboardStep < 3) { state.onboardStep++; showScreen('onboarding'); }
+  else { if (state.user) api('/api/user/prefs', { userId: state.user.id, prefs: state.prefs }).catch(() => {}); showScreen('upload'); }
 </script></body></html>
