@@ -71,3 +71,20 @@ function incUsage(userId) {
   saveJSON("usage.json", data);
   return data[String(userId)];
 }
+
+// Sessions (in-memory, lost on restart — that's fine for active sessions)
+const sessions = new Map(); // userId → { photos[], roomType, results[], expiresAt }
+const SESSION_TTL = 30 * 60 * 1000; // 30 min
+
+function getSession(userId) {
+  const s = sessions.get(String(userId));
+  if (!s) return null;
+  if (Date.now() > s.expiresAt) { sessions.delete(String(userId)); return null; }
+  return s;
+}
+function setSession(userId, data) {
+  sessions.set(String(userId), { ...data, expiresAt: Date.now() + SESSION_TTL });
+}
+function clearSession(userId) {
+  sessions.delete(String(userId));
+}
