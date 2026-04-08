@@ -1,122 +1,103 @@
-# Interior AI Designer — Telegram Mini App
+# LiveSpace AI — Telegram Mini App
 
-A Telegram bot that accepts a room photo and returns **3 AI-redesigned versions** powered by [Replicate](https://replicate.com) and the `adirik/interior-design` model. Results are displayed in a beautiful Telegram Mini App gallery.
+An AI-powered interior design web app running inside Telegram. Upload a room photo, pick your style, budget, and goals — get a personalized redesign in 30-60 seconds.
 
 ---
 
 ## Features
 
-- Send any room photo → get 3 unique redesigned versions in ~30-60 seconds
-- **10 free requests** per user, then a payment prompt (Click / Payme / Uzum)
-- Inline Mini App gallery with full-size view and share support
-- Usage tracked per Telegram user ID, persisted to `usage.json`
-- Express server serves both the bot (polling) and the Mini App (static HTML)
+- **Telegram Mini App** — full multi-screen web app inside Telegram
+- **3 languages** — English, Russian, Uzbek
+- **User onboarding** — room type, goals, budget, priorities
+- **Phone number collection** — manual input or Telegram contact sharing
+- **21 design styles** — Modern, Scandinavian, Japandi, Bohemian, and more
+- **Custom descriptions** — describe your dream design in your own words
+- **8 goal categories** — Cozy, Premium, Budget-Friendly, Productive, Better Sleep, Spacious, Rental Value, Family
+- **4 budget tiers** — Under $300, $300-$1K, $1K-$5K, $5K+
+- **8 priorities** — Coziness, Storage, Lighting, Workspace, Premium Look, Easy Cleaning, Natural Light, Space
+- **Before/after slider** — interactive comparison of original vs redesigned room
+- **Design modifications** — describe changes in natural language, AI edits accordingly
+- **Usage limits** — 3 free designs, then 10,000 UZS for 3 more
+- **Dark/light theme** — syncs with Telegram theme
+- **Returning users** — skip onboarding, preferences saved server-side
 
 ---
 
-## Project Structure
+## Architecture
 
 ```
 .
-├── server.js          # Main backend: Express + Telegram bot + Replicate integration
+├── server.js          # Express API + Telegram bot + fal.ai integration
 ├── package.json       # Dependencies
-├── .env               # Environment variables (never commit this)
-├── usage.json         # Auto-created: tracks per-user request counts
+├── .env               # Environment variables (never commit)
+├── data/              # Runtime JSON storage (users, usage)
 ├── public/
-│   └── index.html     # Telegram Mini App frontend (gallery UI)
+│   └── index.html     # Telegram Mini App (full SPA)
 └── README.md
 ```
+
+### Backend (server.js)
+- **REST API** — `/api/auth`, `/api/upload`, `/api/generate`, `/api/modify`, `/api/user/*`, `/api/data`
+- **Telegram WebApp auth** — HMAC signature verification of initData
+- **Smart prompt builder** — combines room type + style + goal + budget + priorities
+- **fal.ai integration** — Nano Banana model for image-to-image generation
+
+### Frontend (public/index.html)
+- **10 screens** — Splash, Language, Welcome, Onboarding (4 steps), Upload, Design Mode, Styles/Custom, Generating, Result, Modify
+- **Pure vanilla JS** — no frameworks, single HTML file
+- **Telegram WebApp SDK** — theme sync, back button, contact sharing
 
 ---
 
 ## Setup
 
-### 1. Prerequisites
+### Prerequisites
 
 - Node.js 18+
-- A [Telegram bot token](https://t.me/BotFather) — create a bot with `/newbot`
-- A [Replicate API token](https://replicate.com/account/api-tokens)
-- A public HTTPS URL for the Mini App (use [ngrok](https://ngrok.com) locally or deploy to Railway / Render / Fly.io)
+- [Telegram bot token](https://t.me/BotFather)
+- [fal.ai API key](https://fal.ai)
+- Public HTTPS URL (Railway, Render, ngrok, etc.)
 
-### 2. Install dependencies
+### Install
 
 ```bash
 npm install
 ```
 
-### 3. Configure environment
+### Configure
 
-Edit `.env` and fill in your real values:
+Create `.env`:
 
 ```env
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-REPLICATE_API_TOKEN=your_replicate_api_token_here
+TELEGRAM_BOT_TOKEN=your_bot_token
+FAL_KEY=your_fal_api_key
+WEBHOOK_URL=https://your-public-url
+APP_URL=https://your-public-url
 PORT=3000
-APP_URL=https://your-public-url-here   # Must be HTTPS for Telegram Mini App
 ```
 
-### 4. Set Mini App URL in BotFather
-
-1. Open [@BotFather](https://t.me/BotFather) → `/mybots` → your bot
-2. Go to **Bot Settings → Menu Button** or **Configure Mini App**
-3. Set the URL to your `APP_URL` (must be HTTPS)
-
-### 5. Run the bot
+### Run
 
 ```bash
 npm start
-# or for development with auto-restart:
+# or dev mode:
 npm run dev
 ```
 
 ---
 
-## Local development with ngrok
-
-Since Telegram requires HTTPS for Mini Apps, expose your local server:
-
-```bash
-# In one terminal:
-npm start
-
-# In another terminal:
-ngrok http 3000
-```
-
-Copy the `https://....ngrok.io` URL into your `.env` as `APP_URL`, then restart the server.
-
----
-
-## Usage Limits & Payment
-
-The first **10 photo requests** per user are free. After that, the bot replies:
-
-> ⚠️ To continue, please pay **1000 UZS** via Click, Payme, or Uzum.
-
-To implement real payment processing, integrate the respective payment gateway APIs and add an admin command to reset/extend a user's limit in `usage.json`.
-
----
-
 ## Bot Commands
 
-| Command   | Description                        |
-|-----------|------------------------------------|
-| `/start`  | Welcome message + Mini App button  |
-| `/usage`  | Check remaining free requests      |
-
----
-
-## Replicate Model
-
-**Model:** [`adirik/interior-design`](https://replicate.com/adirik/interior-design)
-
-Generates photorealistic interior redesigns from an input room photo. Three versions are generated in parallel to minimize wait time.
+| Command  | Description                    |
+|----------|--------------------------------|
+| `/start` | Open the web app               |
+| `/help`  | How to use + app button        |
+| `/usage` | Check remaining free designs   |
+| `/lang`  | Change language (via app)      |
 
 ---
 
 ## Deployment
-
-Any Node.js hosting works. Recommended options:
 
 | Platform | Free tier | Notes |
 |----------|-----------|-------|
@@ -124,4 +105,4 @@ Any Node.js hosting works. Recommended options:
 | [Render](https://render.com) | Yes | Sleeps after inactivity |
 | [Fly.io](https://fly.io) | Yes | More control |
 
-Set your environment variables on the platform's dashboard instead of using `.env`.
+Set environment variables on the platform dashboard.
