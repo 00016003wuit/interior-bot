@@ -1417,17 +1417,17 @@ function showPhoneStatus(msg) {
   if (el) { el.textContent = msg; el.style.display = 'block'; }
 }
 
-async function pollForPhone(maxAttempts = 8) {
+async function pollForPhone(maxAttempts = 10) {
+  if (!state.user?.id) return false;
   for (let i = 0; i < maxAttempts; i++) {
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(r => setTimeout(r, 1200));
     try {
-      const d = await api('/api/auth', { initData: tg?.initData || '', user: tg?.initDataUnsafe?.user || null });
-      if (d.user?.phone) {
-        state.user = d.user;
-        state.usage = d.usage;
+      const d = await api('/api/user/check-phone', { userId: state.user.id });
+      if (d.phone) {
+        state.user.phone = d.phone;
         const phoneInput = document.getElementById('splash-phone');
-        if (phoneInput) phoneInput.value = d.user.phone;
-        showPhoneStatus('✓ ' + d.user.phone);
+        if (phoneInput) phoneInput.value = d.phone;
+        showPhoneStatus('✓ ' + d.phone);
         return true;
       }
     } catch {}
