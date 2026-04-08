@@ -564,3 +564,19 @@ bot.command("usage", (ctx) => {
           { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
         ]],
       },
+    }
+  );
+});
+
+// /lang — redirect to app
+bot.command("lang", (ctx) => {
+  return ctx.reply("Open the app to change your language:", {
+    reply_markup: {
+      inline_keyboard: [[
+        { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
+      ]],
+    },
+  });
+});
+
+// Photo in chat → redirect to web app
