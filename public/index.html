@@ -1408,4 +1408,34 @@ async function startGeneration() {
   showScreen('generating');
   try {
     const fd = new FormData();
+    state.photos.forEach(p => fd.append('photos', p.file));
+    if (state.user) fd.append('userId', state.user.id);
+    const upRes = await fetch(API + '/api/upload', { method: 'POST', body: fd });
+    const upData = await upRes.json();
+    if (!upRes.ok) throw new Error(upData.error || 'Upload failed');
+    state.photoUrls = upData.urls;
+
+    const genRes = await api('/api/generate', {
+      userId: state.user?.id,
+      photoUrl: state.photoUrls[0],
+      roomType: state.prefs.roomType,
+      styleKey: state.designMode === 'styles' ? state.selectedStyle : null,
+      customPrompt: state.designMode === 'custom' ? state.customPrompt : null,
+      goal: state.prefs.goal,
+      budget: state.prefs.budget,
+      priorities: state.prefs.priorities,
+    });
+    state.result = { originalUrl: genRes.originalUrl, generatedUrl: genRes.generatedUrl };
+    state.usage = genRes.usage;
+    showScreen('result');
+  } catch (err) {
+    if (err.error === 'limit_reached') { state.usage = err.usage || state.usage; showScreen('limit'); }
+    else { state.errorMessage = err.message || err.error || 'Generation failed'; state.lastAction = startGeneration; showScreen('error'); }
+  }
+}
+
+async function applyModification() {
+  const text = document.getElementById('mt')?.value?.trim();
+  if (!text || !state.result) return;
+  if (state.usage.remaining <= 0) { showScreen('limit'); return; }
 </script></body></html>
