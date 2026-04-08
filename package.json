@@ -1,7 +1,7 @@
 {
-  "name": "interior-design-bot",
-  "version": "1.0.0",
-  "description": "Telegram Mini App for AI-powered interior design using Replicate",
+  "name": "livespace-ai",
+  "version": "2.0.0",
+  "description": "LiveSpace AI — Telegram Mini App for AI-powered interior redesign with budget, goals, and style personalization",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
