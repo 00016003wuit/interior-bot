@@ -588,4 +588,94 @@
       background: var(--surface2);
       border-radius: var(--radius-s);
       font-size: 14px; font-weight: 500;
+    }
+
+    /* ── Toast ────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 100px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      padding: 12px 20px;
+      font-size: 14px;
+      z-index: 1000;
+      opacity: 0;
+      transition: var(--transition);
+      pointer-events: none;
+      max-width: 90%;
+      text-align: center;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+    .toast.error { border-color: var(--error); color: var(--error); }
+
+    /* ── Back button header ──────────────── */
+    .top-bar {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 20px;
+    }
+    .top-bar .back-btn {
+      width: 36px; height: 36px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 18px;
+      transition: var(--transition);
+    }
+    .top-bar .back-btn:active { transform: scale(.9); }
+    .top-bar .top-title { font-size: 16px; font-weight: 600; }
+
+    /* ── Utilities ────────────────────────── */
+    .text-center { text-align: center; }
+    .mt-8 { margin-top: 8px; }
+    .mt-12 { margin-top: 12px; }
+    .mt-16 { margin-top: 16px; }
+    .mt-20 { margin-top: 20px; }
+    .mt-24 { margin-top: 24px; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-16 { margin-bottom: 16px; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <!-- Splash -->
+  <div id="screen-splash" class="screen splash active">
+    <div class="splash-content">
+      <span class="splash-icon">🏠</span>
+      <div class="splash-title">LiveSpace AI</div>
+      <p class="splash-sub">Your AI Interior Designer</p>
+      <div class="spinner"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+<input type="file" id="file-input" accept="image/*" multiple style="display:none" />
+
+<script>
+// ═══════════════════════════════════════════════
+//  LiveSpace AI — Telegram Mini App
+// ═══════════════════════════════════════════════
+
+const tg = window.Telegram?.WebApp;
+const API = '';
+
+// ── State ────────────────────────────────────
+const state = {
+  user: null,
+  lang: 'en',
+  usage: { used: 0, limit: 3, remaining: 3 },
+  currentScreen: 'splash',
+  onboardStep: 0,
+  prefs: { roomType: null, ownership: null, goal: null, budget: null, priorities: [] },
+  photos: [],
+  photoUrls: [],
 </style></head><body></body></html>
