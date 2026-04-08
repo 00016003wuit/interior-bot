@@ -1451,7 +1451,7 @@ function togglePriority(key) {
   if (i >= 0) state.prefs.priorities.splice(i, 1); else state.prefs.priorities.push(key);
   showScreen('onboarding');
 }
-function onboardBack() { if (state.onboardStep > 0) { state.onboardStep--; showScreen('onboarding'); } else showScreen('welcome'); }
+function onboardBack() { if (state.onboardStep > 0) { state.onboardStep--; showScreen('onboarding'); } else showScreen('language'); }
 function onboardNext() {
   if (state.onboardStep < 3) { state.onboardStep++; showScreen('onboarding'); }
   else { if (state.user) api('/api/user/prefs', { userId: state.user.id, prefs: state.prefs }).catch(() => {}); showScreen('upload'); }
@@ -1469,7 +1469,7 @@ function shareResult() {
 }
 
 function goBack() {
-  const map = { welcome:'language', onboarding:'welcome', upload:'onboarding', designMode:'upload', styles:'designMode', custom:'designMode', result:'upload', modify:'result', limit: state.result?'result':'upload', error:'upload' };
+  const map = { language:'splash', onboarding:'language', upload:'onboarding', designMode:'upload', styles:'designMode', custom:'designMode', result:'upload', modify:'result', limit: state.result?'result':'upload', error:'upload' };
   if (state.currentScreen === 'onboarding') onboardBack();
   else showScreen(map[state.currentScreen] || 'upload');
 }
@@ -1620,7 +1620,7 @@ async function init() {
   updateLandingText();
 }
 
-setTimeout(() => { init().finally(() => clearTimeout(initTimeout)); }, 800);
+init();
 </script>
 </body>
 </html>
