@@ -1228,4 +1228,22 @@ screens.generating = (el) => {
   el.innerHTML = `
     <div class="generating-screen">
       <div class="gen-visual">\u{1F3E0}</div>
+      <div class="gen-title">${t('generating')}</div>
+      <div class="gen-subtitle">${t('genDesc')}</div>
+      <div class="gen-steps">
+        <div class="gen-step active" id="gs1"><span class="gen-step-icon">\u25CF</span> ${t('genStep1')}</div>
+        <div class="gen-step" id="gs2"><span class="gen-step-icon">\u25CF</span> ${t('genStep2')}</div>
+        <div class="gen-step" id="gs3"><span class="gen-step-icon">\u25CF</span> ${t('genStep3')}</div>
+        <div class="gen-step" id="gs4"><span class="gen-step-icon">\u25CF</span> ${t('genStep4')}</div>
+      </div>
+    </div>`;
+  [2, 3, 4].forEach((s, i) => {
+    setTimeout(() => {
+      const prev = document.getElementById('gs' + (s - 1));
+      const curr = document.getElementById('gs' + s);
+      if (prev) { prev.classList.remove('active'); prev.classList.add('done'); prev.querySelector('.gen-step-icon').textContent = '\u2713'; }
+      if (curr) curr.classList.add('active');
+    }, (i + 1) * 8000);
+  });
+};
 </script></body></html>
