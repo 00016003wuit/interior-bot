@@ -503,3 +503,28 @@ bot.catch((err, ctx) => {
 // /start — send welcome with web app button
 bot.start((ctx) => {
   const firstName = ctx.from.first_name || "there";
+  const msg =
+    `Hey ${firstName}! 🏠\n\n` +
+    `Welcome to *LiveSpace AI* — your personal AI interior designer\\.\n\n` +
+    `Upload a room photo, choose your style, budget, and goals — get a personalized redesign in seconds\\!\n\n` +
+    `Tap the button below to open the app 👇`;
+
+  return ctx.reply(msg, {
+    parse_mode: "MarkdownV2",
+    reply_markup: {
+      inline_keyboard: [[
+        { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
+      ]],
+    },
+  });
+});
+
+// Handle contact sharing (phone number from Mini App requestContact)
+bot.on("contact", (ctx) => {
+  const userId = ctx.from.id;
+  const phone = ctx.message.contact.phone_number;
+  console.log(`[contact] user=${userId} phone=${phone}`);
+  saveUser(userId, { phone });
+  return ctx.reply("Phone number saved! ✓");
+});
+
