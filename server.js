@@ -123,3 +123,15 @@ const ROOM_TYPES = {
   office:   { emoji: "🏢", en: "Office",       ru: "Офис",       uz: "Ofis",         prompt: "home office" },
   dining:   { emoji: "🍽️", en: "Dining Room",  ru: "Столовая",   uz: "Ovqat xonasi", prompt: "dining room" },
 };
+
+// ── Goals ─────────────────────────────────────
+const GOALS = {
+  cozy:        { emoji: "🔥", en: "Cozy & Comfortable",    ru: "Уютный и комфортный",     uz: "Qulay va shinam",         prompt: "warm cozy atmosphere, soft ambient lighting, plush comfortable textiles, warm earth tones" },
+  premium:     { emoji: "💎", en: "Modern & Premium",       ru: "Современный и премиум",   uz: "Zamonaviy va premium",    prompt: "luxury premium aesthetic, high-end designer materials, polished sophisticated surfaces, curated art pieces" },
+  budget:      { emoji: "💰", en: "Budget-Friendly Refresh",ru: "Бюджетное обновление",    uz: "Byudjetga mos yangilash", prompt: "achievable on a small budget, affordable stylish furniture, simple impactful changes, smart use of paint and textiles" },
+  productive:  { emoji: "💻", en: "Productive Workspace",   ru: "Продуктивное пространство",uz: "Samarali ish maydoni",    prompt: "optimized for productivity, ergonomic setup, excellent task lighting, organized clean workspace, minimal distractions" },
+  sleep:       { emoji: "🌙", en: "Better Sleep",           ru: "Лучший сон",              uz: "Yaxshi uyqu",             prompt: "sleep-optimized bedroom, calming muted colors, blackout capability, soft ambient lighting, serene atmosphere" },
+  spacious:    { emoji: "🌤️", en: "Spacious Feel",          ru: "Ощущение простора",       uz: "Kenglik hissi",           prompt: "space-maximizing design, strategic mirror placement, light reflective colors, minimal furniture, open airy feel" },
+  rental:      { emoji: "🏘️", en: "Rental/Resale Value",    ru: "Для аренды/продажи",      uz: "Ijara/sotish uchun",      prompt: "staging for maximum rental and resale value, neutral appealing palette, modern clean look, broad market appeal" },
+  family:      { emoji: "👨‍👩‍👧‍👦", en: "Family-Friendly",       ru: "Для семьи",               uz: "Oila uchun",              prompt: "family-friendly design, durable easy-clean materials, child-safe rounded furniture, practical storage solutions, playful yet elegant" },
+};
