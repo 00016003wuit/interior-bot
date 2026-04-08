@@ -1423,6 +1423,27 @@ function submitWelcome(skip) {
   showScreen('onboarding');
 }
 
+function splashContinue(skip) {
+  const phone = document.getElementById('splash-phone')?.value?.trim();
+  if (phone && state.user) api('/api/user/phone', { userId: state.user.id, phone }).catch(() => {});
+  showScreen('language');
+}
+
+function updateLandingText() {
+  const name = state.user?.firstName || '';
+  const wel = document.getElementById('splash-welcome');
+  if (wel && name) wel.textContent = t('welcome') + ', ' + name + '!';
+  else if (wel) wel.textContent = t('appDesc');
+  const ph = document.getElementById('phone-heading');
+  if (ph) ph.textContent = t('phoneTitle');
+  const ps = document.getElementById('phone-sub');
+  if (ps) ps.textContent = t('phoneDesc');
+  const sb = document.getElementById('share-btn');
+  if (sb) sb.textContent = t('shareContact');
+  const or = document.getElementById('or-text');
+  if (or) or.textContent = state.lang === 'ru' ? 'или' : state.lang === 'uz' ? 'yoki' : 'or';
+}
+
 function selectPref(key, val) { state.prefs[key] = val; showScreen('onboarding'); }
 function togglePriority(key) {
   const i = state.prefs.priorities.indexOf(key);
