@@ -698,12 +698,26 @@
 </head>
 <body>
 <div id="app">
-  <!-- Splash -->
+  <!-- Landing -->
   <div id="screen-splash" class="screen splash active">
-    <div class="splash-content">
-      <span class="splash-icon">🏠</span>
-      <div class="splash-title">LiveSpace AI</div>
-      <p class="splash-sub">Your AI Interior Designer</p>
+    <div class="splash-hero">
+      <div class="splash-content">
+        <span class="splash-icon">🏠</span>
+        <div class="splash-title">LiveSpace AI</div>
+        <p class="splash-sub" id="splash-welcome">Your AI Interior Designer</p>
+      </div>
+      <div class="scroll-arrow" onclick="document.getElementById('phone-section').scrollIntoView({behavior:'smooth'})">&#8595;</div>
+    </div>
+    <div class="splash-section" id="phone-section">
+      <h3 id="phone-heading">Your phone number</h3>
+      <p style="text-align:center;color:var(--text2);font-size:13px;margin-bottom:16px;" id="phone-sub">For payment and notifications</p>
+      <input type="tel" class="input-field" id="splash-phone" placeholder="+998 XX XXX XX XX" />
+      <div class="or-divider" id="or-text">or</div>
+      <button class="btn btn-secondary" onclick="shareContact()" id="share-btn">Share from Telegram</button>
+      <div style="margin-top:24px;">
+        <button class="btn btn-primary" onclick="splashContinue()">Continue</button>
+        <button class="btn btn-ghost" onclick="splashContinue(true)">Skip</button>
+      </div>
     </div>
   </div>
 </div>
