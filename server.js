@@ -256,3 +256,17 @@ function buildPrompt(params) {
   parts.push(QUALITY);
   return parts.join(", ");
 }
+
+// ── Express setup ─────────────────────────────
+const app = express();
+app.use(express.json({ limit: "1mb" }));
+
+// Multer for photo uploads
+const upload_mw = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024, files: 3 },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Only images allowed"));
+  },
+});
