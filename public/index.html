@@ -1193,4 +1193,24 @@ screens.designMode = (el) => {
       </div>
     </div>`;
 };
+
+screens.styles = (el) => {
+  const cards = Object.entries(STYLES).map(([k, v]) =>
+    `<div class="card selectable style-card ${state.selectedStyle === k ? 'selected' : ''}" onclick="selectStyle('${k}')">
+      <span class="style-emoji">${v.emoji}</span><span class="style-name">${label(v)}</span>
+    </div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="top-bar"><div class="back-btn" onclick="goBack()">\u2190</div><div class="top-title">${t('styleTitle')}</div></div>
+    <div class="screen-body">
+      <p class="text-center mb-16" style="font-size:13px;color:var(--text2);">${t('styleHint')}</p>
+      <div class="styles-grid">${cards}</div>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" ${state.selectedStyle ? '' : 'disabled'} onclick="startGeneration()">${t('generateBtn')}</button>
+    </div>`;
+};
+
+screens.custom = (el) => {
 </script></body></html>
