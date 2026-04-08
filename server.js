@@ -425,3 +425,53 @@ app.post("/api/modify", async (req, res) => {
   if (!userId || !generatedUrl || !modificationText) {
     return res.status(400).json({ error: "userId, generatedUrl, and modificationText required" });
   }
+
+  const usage = getUsage(userId);
+  if (usage >= FREE_LIMIT) {
+    return res.status(403).json({
+      error: "limit_reached",
+      usage: { used: usage, limit: FREE_LIMIT, remaining: 0 },
+    });
+  }
+
+  try {
+    const editPrompt = `Edit this interior design photo: ${modificationText}. Keep the exact same room layout, same furniture positions, same lighting. Only change the specific item mentioned. Maintain photorealistic quality. Do not change anything else.`;
+
+    // Re-upload the generated image to get a fresh URL
+    const dlRes = await fetch(generatedUrl);
+    if (!dlRes.ok) throw new Error(`Could not download image: HTTP ${dlRes.status}`);
+    const buf = Buffer.from(await dlRes.arrayBuffer());
+    const freshUrl = await uploadImage(buf);
+
+    const newUrl = await runEdit(freshUrl, editPrompt);
+    const newCount = incUsage(userId);
+    const remaining = Math.max(0, FREE_LIMIT - newCount);
+
+    // Update session
+    const session = getSession(userId);
+    if (session) {
+      session.results.push({ url: newUrl, prompt: editPrompt, modification: modificationText, createdAt: new Date().toISOString() });
+      setSession(userId, session);
+    }
+
+    res.json({
+      generatedUrl: newUrl,
+      usage: { used: newCount, limit: FREE_LIMIT, remaining },
+    });
+  } catch (err) {
+    console.error("[api/modify]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get usage
+app.get("/api/user/:userId/usage", (req, res) => {
+  const usage = getUsage(req.params.userId);
+  res.json({ used: usage, limit: FREE_LIMIT, remaining: Math.max(0, FREE_LIMIT - usage) });
+});
+
+// Get all static data (styles, rooms, goals, budgets, priorities)
+app.get("/api/data", (req, res) => {
+  res.json({
+    rooms: Object.fromEntries(
+      Object.entries(ROOM_TYPES).map(([k, v]) => [k, { emoji: v.emoji, en: v.en, ru: v.ru, uz: v.uz }])
