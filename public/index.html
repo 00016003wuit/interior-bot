@@ -208,4 +208,79 @@
     .step-dots {
       display: flex; gap: 6px; justify-content: center; margin: 12px 0;
     }
+    .step-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--surface3);
+      transition: var(--transition);
+    }
+    .step-dot.active {
+      background: var(--primary);
+      width: 24px;
+      border-radius: 4px;
+    }
+    .step-dot.done { background: var(--success); }
+
+    .usage-bar {
+      display: flex; gap: 4px; margin: 8px 0;
+    }
+    .usage-block {
+      flex: 1; height: 8px;
+      border-radius: 4px;
+      background: var(--surface3);
+      transition: var(--transition);
+    }
+    .usage-block.used { background: var(--primary); }
+
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid var(--surface3);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin .8s linear infinite;
+    }
+
+    /* ── Screen: Splash ──────────────────── */
+    .splash {
+      display: flex;
+      align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: radial-gradient(ellipse at 50% 30%, rgba(124, 58, 237, .2), transparent 70%),
+                  var(--bg);
+    }
+    .splash-content { text-align: center; }
+    .splash-icon { font-size: 72px; animation: float 3s ease-in-out infinite; display: block; margin-bottom: 20px; }
+    .splash-title {
+      font-size: 28px; font-weight: 800; letter-spacing: -.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--primary-light));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text; margin-bottom: 8px;
+    }
+    .splash-sub { color: var(--text2); font-size: 14px; }
+    .splash .spinner { margin: 24px auto 0; }
+
+    /* ── Screen: Language ────────────────── */
+    .lang-grid {
+      display: flex; flex-direction: column; gap: 12px;
+      max-width: 360px; margin: 32px auto 0;
+    }
+    .lang-btn {
+      display: flex; align-items: center; gap: 14px;
+      padding: 18px 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer; transition: var(--transition);
+      text-align: left;
+    }
+    .lang-btn:active { transform: scale(.97); }
+    .lang-btn .flag { font-size: 32px; }
+    .lang-btn .lang-name { font-size: 17px; font-weight: 600; }
+    .lang-btn .lang-native { font-size: 13px; color: var(--text2); }
+
+    /* ── Screen: Welcome ─────────────────── */
+    .welcome-hero {
+      text-align: center;
+      padding: 40px 20px 24px;
+      background: radial-gradient(ellipse at 50% 0%, rgba(124, 58, 237, .2), transparent 70%);
 </style></head><body></body></html>
