@@ -1098,4 +1098,49 @@ screens.welcome = (el) => {
     <div class="phone-section">
       <label>${t('phoneTitle')}</label>
       <input type="tel" class="input-field" id="phone-input" placeholder="${t('phonePlaceholder')}" value="${esc(state.user?.phone || '')}" />
+      <button class="btn btn-secondary mt-12" onclick="shareContact()">${t('shareContact')}</button>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" onclick="submitWelcome()">${t('getStarted')}</button>
+      <button class="btn btn-ghost" onclick="submitWelcome(true)">${t('skip')}</button>
+    </div>`;
+};
+
+screens.onboarding = (el) => {
+  const step = state.onboardStep;
+  const total = 4;
+  const dots = Array.from({length: total}, (_, i) =>
+    `<div class="step-dot ${i < step ? 'done' : ''} ${i === step ? 'active' : ''}"></div>`
+  ).join('');
+
+  let content = '';
+  if (step === 0) {
+    content = `<div class="onboard-question">${t('onboard1')}</div><div class="onboard-grid">${
+      Object.entries(ROOMS).map(([k, v]) =>
+        `<div class="card selectable onboard-card ${state.prefs.roomType === k ? 'selected' : ''}" onclick="selectPref('roomType','${k}')">
+          <span class="card-emoji">${v.emoji}</span><span class="card-label">${label(v)}</span>
+        </div>`
+      ).join('')}</div>`;
+  } else if (step === 1) {
+    content = `<div class="onboard-question">${t('onboard3')}</div><div class="onboard-grid">${
+      Object.entries(GOALS).map(([k, v]) =>
+        `<div class="card selectable onboard-card ${state.prefs.goal === k ? 'selected' : ''}" onclick="selectPref('goal','${k}')">
+          <span class="card-emoji">${v.emoji}</span><span class="card-label">${label(v)}</span>
+        </div>`
+      ).join('')}</div>`;
+  } else if (step === 2) {
+    const icons = { low: '\u{1F4B5}', mid: '\u{1F4B0}', high: '\u{1F48E}', premium: '\u{1F451}' };
+    content = `<div class="onboard-question">${t('onboard4')}</div><div class="onboard-grid">${
+      Object.entries(BUDGETS).map(([k, v]) =>
+        `<div class="card selectable onboard-card ${state.prefs.budget === k ? 'selected' : ''}" onclick="selectPref('budget','${k}')">
+          <span class="card-emoji">${icons[k]}</span><span class="card-label">${label(v)}</span>
+        </div>`
+      ).join('')}</div>`;
+  } else if (step === 3) {
+    content = `<div class="onboard-question">${t('onboard6')}</div><div class="chips-wrap">${
+      Object.entries(PRIORITIES).map(([k, v]) =>
+        `<div class="chip ${state.prefs.priorities.includes(k) ? 'selected' : ''}" onclick="togglePriority('${k}')">${v.emoji} ${label(v)}</div>`
+      ).join('')}</div>`;
+  }
+
 </script></body></html>
