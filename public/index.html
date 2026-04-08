@@ -1476,7 +1476,20 @@ function submitWelcome(skip) {
 
 function splashContinue(skip) {
   const phone = document.getElementById('splash-phone')?.value?.trim();
-  if (phone && state.user) api('/api/user/phone', { userId: state.user.id, phone }).catch(() => {});
+  if (!skip && !phone && !state.user?.phone) {
+    // Highlight phone input if empty and not skipping
+    const phoneInput = document.getElementById('splash-phone');
+    if (phoneInput) {
+      phoneInput.style.borderColor = 'var(--warning)';
+      phoneInput.focus();
+      setTimeout(() => { phoneInput.style.borderColor = ''; }, 2000);
+    }
+    toast(state.lang === 'ru' ? 'Введите номер или нажмите "Пропустить"' : state.lang === 'uz' ? 'Raqam kiriting yoki "O\'tkazib yuborish" bosing' : 'Enter number or tap "Skip"');
+    return;
+  }
+  if (phone && state.user) {
+    api('/api/user/phone', { userId: state.user.id, phone }).catch(() => {});
+  }
   showScreen('language');
 }
 
