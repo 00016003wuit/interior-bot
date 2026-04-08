@@ -1438,4 +1438,34 @@ async function applyModification() {
   const text = document.getElementById('mt')?.value?.trim();
   if (!text || !state.result) return;
   if (state.usage.remaining <= 0) { showScreen('limit'); return; }
+  showScreen('generating');
+  try {
+    const res = await api('/api/modify', { userId: state.user?.id, generatedUrl: state.result.generatedUrl, modificationText: text });
+    state.result.generatedUrl = res.generatedUrl;
+    state.usage = res.usage;
+    showScreen('result');
+  } catch (err) {
+    if (err.error === 'limit_reached') { state.usage = err.usage || state.usage; showScreen('limit'); }
+    else { state.errorMessage = err.message || err.error || 'Modification failed'; state.lastAction = applyModification; showScreen('error'); }
+  }
+}
+
+// ── Comparison slider ────────────────────────
+function initSlider() {
+  const c = document.getElementById('comparison');
+  const s = document.getElementById('comp-slider');
+  const b = document.getElementById('comp-before');
+  if (!c || !s || !b) return;
+  let drag = false;
+  function upd(x) {
+    const rect = c.getBoundingClientRect();
+    let pct = Math.max(2, Math.min(98, ((x - rect.left) / rect.width) * 100));
+    s.style.left = pct + '%';
+    b.style.clipPath = `inset(0 ${100 - pct}% 0 0)`;
+  }
+  s.addEventListener('mousedown', e => { drag = true; e.preventDefault(); });
+  s.addEventListener('touchstart', () => { drag = true; }, { passive: true });
+  document.addEventListener('mousemove', e => { if (drag) upd(e.clientX); });
+  document.addEventListener('touchmove', e => { if (drag) upd(e.touches[0].clientX); }, { passive: true });
+  document.addEventListener('mouseup', () => drag = false);
 </script></body></html>
