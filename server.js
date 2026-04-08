@@ -183,3 +183,30 @@ const STYLES = {
   maximalist:    { emoji: "🌈", en: "Maximalist",          ru: "Максимализм",         uz: "Maksimalizm",           prompt: `${PRESERVE}, maximalist interior design, more is more philosophy, jewel-toned wallpapered walls, floor-to-ceiling gallery of diverse framed artwork, lush layered patterned rugs stacked, abundant decorative objects and sculptures, velvet tufted furniture, ornate gilded mirror, dramatic chandelier, every surface thoughtfully styled` },
   biophilic:     { emoji: "🌱", en: "Biophilic",           ru: "Биофильный",          uz: "Biofilik",              prompt: `${PRESERVE}, biophilic interior design, deep connection with nature, lush cascading indoor plants and hanging vines from ceiling, living moss wall feature panel, raw natural wood and stone surfaces throughout, abundant natural light, indoor water feature, organic curved furniture, forest green and warm clay earth tones` },
 };
+
+// ── fal.ai helpers ────────────────────────────
+async function uploadImage(buffer) {
+  console.log(`[fal] uploading image (${buffer.length} bytes)...`);
+  const blob = new Blob([buffer], { type: "image/jpeg" });
+  const url = await fal.storage.upload(blob);
+  console.log(`[fal] uploaded: ${url}`);
+  return url;
+}
+
+async function runEdit(imageUrl, prompt) {
+  const fullPrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
+  console.log(`[fal] generating — prompt: "${fullPrompt.slice(0, 100)}..."`);
+  const result = await fal.subscribe("fal-ai/nano-banana/edit", {
+    input: {
+      prompt: fullPrompt,
+      image_urls: [imageUrl],
+      num_images: 1,
+      aspect_ratio: "auto",
+      output_format: "jpeg",
+    },
+    timeout: 120000,
+  });
+  const finalUrl = result.data.images[0].url;
+  console.log(`[fal] done: ${finalUrl}`);
+  return finalUrl;
+}
