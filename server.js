@@ -301,6 +301,34 @@ const upload_mw = multer({
   },
 });
 
+// ── Input validation helpers ─────────────────
+const VALID_ROOMS = Object.keys(ROOM_TYPES);
+const VALID_GOALS = Object.keys(GOALS);
+const VALID_BUDGETS = Object.keys(BUDGETS);
+const VALID_PRIORITIES = Object.keys(PRIORITIES);
+const VALID_STYLES = Object.keys(STYLES);
+const VALID_LANGS = ["en", "ru", "uz"];
+
+function sanitizeStr(str, maxLen = 500) {
+  if (typeof str !== "string") return "";
+  return str.trim().slice(0, maxLen);
+}
+
+function isValidPhone(phone) {
+  if (!phone || typeof phone !== "string") return false;
+  const cleaned = phone.replace(/[\s\-()]/g, "");
+  return /^\+?\d{7,15}$/.test(cleaned);
+}
+
+function validateEnum(val, validList) {
+  return validList.includes(val);
+}
+
+function validatePriorities(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(p => VALID_PRIORITIES.includes(p)).slice(0, 8);
+}
+
 // ── API routes ────────────────────────────────
 
 // Auth — verify Telegram initData, return/create user
@@ -357,7 +385,11 @@ app.post("/api/auth", (req, res) => {
 app.post("/api/user/phone", (req, res) => {
   const { userId, phone } = req.body;
   if (!userId) return res.status(400).json({ error: "userId required" });
-  const user = saveUser(userId, { phone });
+  const cleaned = sanitizeStr(phone, 20);
+  if (!isValidPhone(cleaned)) {
+    return res.status(400).json({ error: "Invalid phone number format" });
+  }
+  const user = saveUser(userId, { phone: cleaned });
   res.json({ user });
 });
 
@@ -372,8 +404,8 @@ app.post("/api/user/check-phone", (req, res) => {
 // Save language
 app.post("/api/user/lang", (req, res) => {
   const { userId, lang } = req.body;
-  if (!userId || !["en", "ru", "uz"].includes(lang)) {
-    return res.status(400).json({ error: "Invalid params" });
+  if (!userId || !validateEnum(lang, VALID_LANGS)) {
+    return res.status(400).json({ error: "Invalid userId or language code" });
   }
   const user = saveUser(userId, { lang });
   res.json({ user });
@@ -382,8 +414,17 @@ app.post("/api/user/lang", (req, res) => {
 // Save onboarding preferences
 app.post("/api/user/prefs", (req, res) => {
   const { userId, prefs } = req.body;
-  if (!userId || !prefs) return res.status(400).json({ error: "Invalid params" });
-  const user = saveUser(userId, { prefs, onboarded: true });
+  if (!userId || !prefs || typeof prefs !== "object") {
+    return res.status(400).json({ error: "Invalid params" });
+  }
+  // Validate each preference field against allowed values
+  const validated = {
+    roomType: validateEnum(prefs.roomType, VALID_ROOMS) ? prefs.roomType : null,
+    goal: validateEnum(prefs.goal, VALID_GOALS) ? prefs.goal : null,
+    budget: validateEnum(prefs.budget, VALID_BUDGETS) ? prefs.budget : null,
+    priorities: validatePriorities(prefs.priorities),
+  };
+  const user = saveUser(userId, { prefs: validated, onboarded: true });
   res.json({ user });
 });
 
@@ -419,11 +460,20 @@ app.post("/api/upload", upload_mw.array("photos", 3), async (req, res) => {
 
 // Generate design
 app.post("/api/generate", generateLimiter, async (req, res) => {
-  const { userId, photoUrl, roomType, styleKey, customPrompt, goal, budget, priorities } = req.body;
+  const { userId, photoUrl } = req.body;
+  let { roomType, styleKey, customPrompt, goal, budget, priorities } = req.body;
 
-  if (!userId || !photoUrl) {
+  if (!userId || !photoUrl || typeof photoUrl !== "string") {
     return res.status(400).json({ error: "userId and photoUrl required" });
   }
+
+  // Validate and sanitize all parameters
+  roomType = validateEnum(roomType, VALID_ROOMS) ? roomType : null;
+  styleKey = validateEnum(styleKey, VALID_STYLES) ? styleKey : null;
+  goal = validateEnum(goal, VALID_GOALS) ? goal : null;
+  budget = validateEnum(budget, VALID_BUDGETS) ? budget : null;
+  priorities = validatePriorities(priorities || []);
+  customPrompt = sanitizeStr(customPrompt, 1000);
 
   // Check usage limit
   const usage = getUsage(userId);
@@ -463,9 +513,12 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
 
 // Modify existing design
 app.post("/api/modify", generateLimiter, async (req, res) => {
-  const { userId, generatedUrl, modificationText } = req.body;
+  const { userId, generatedUrl } = req.body;
+  let { modificationText } = req.body;
 
-  if (!userId || !generatedUrl || !modificationText) {
+  modificationText = sanitizeStr(modificationText, 1000);
+
+  if (!userId || !generatedUrl || typeof generatedUrl !== "string" || !modificationText) {
     return res.status(400).json({ error: "userId, generatedUrl, and modificationText required" });
   }
 
