@@ -378,3 +378,50 @@ app.post("/api/upload", upload_mw.array("photos", 3), async (req, res) => {
 app.post("/api/generate", async (req, res) => {
   const { userId, photoUrl, roomType, styleKey, customPrompt, goal, budget, priorities } = req.body;
 
+  if (!userId || !photoUrl) {
+    return res.status(400).json({ error: "userId and photoUrl required" });
+  }
+
+  // Check usage limit
+  const usage = getUsage(userId);
+  if (usage >= FREE_LIMIT) {
+    return res.status(403).json({
+      error: "limit_reached",
+      message: `You've used all ${FREE_LIMIT} free designs. Pay ${PACK_PRICE.toLocaleString()} UZS to unlock more.`,
+      usage: { used: usage, limit: FREE_LIMIT, remaining: 0 },
+    });
+  }
+
+  try {
+    const prompt = buildPrompt({ roomType, styleKey, customPrompt, goal, budget, priorities });
+    console.log(`[generate] user=${userId} room=${roomType} style=${styleKey || "custom"}`);
+
+    const generatedUrl = await runEdit(photoUrl, prompt);
+    const newCount = incUsage(userId);
+    const remaining = Math.max(0, FREE_LIMIT - newCount);
+
+    // Store in session
+    setSession(userId, {
+      photos: [photoUrl],
+      roomType,
+      results: [{ url: generatedUrl, prompt, style: styleKey, createdAt: new Date().toISOString() }],
+    });
+
+    res.json({
+      generatedUrl,
+      originalUrl: photoUrl,
+      usage: { used: newCount, limit: FREE_LIMIT, remaining },
+    });
+  } catch (err) {
+    console.error("[api/generate]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Modify existing design
+app.post("/api/modify", async (req, res) => {
+  const { userId, generatedUrl, modificationText } = req.body;
+
+  if (!userId || !generatedUrl || !modificationText) {
+    return res.status(400).json({ error: "userId, generatedUrl, and modificationText required" });
+  }
