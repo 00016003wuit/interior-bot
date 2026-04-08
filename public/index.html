@@ -1468,4 +1468,24 @@ function initSlider() {
   document.addEventListener('mousemove', e => { if (drag) upd(e.clientX); });
   document.addEventListener('touchmove', e => { if (drag) upd(e.touches[0].clientX); }, { passive: true });
   document.addEventListener('mouseup', () => drag = false);
+  document.addEventListener('touchend', () => drag = false);
+  c.addEventListener('click', e => upd(e.clientX));
+}
+
+// ── Toast ────────────────────────────────────
+function toast(msg, isErr) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'toast show' + (isErr ? ' error' : '');
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+// ── Telegram theme ───────────────────────────
+if (tg) {
+  tg.expand();
+  tg.enableClosingConfirmation();
+  if (tg.colorScheme === 'light') {
+    const r = document.documentElement.style;
+    r.setProperty('--bg', '#ffffff');
+    r.setProperty('--bg2', '#f5f5f7');
 </script></body></html>
