@@ -135,3 +135,11 @@ const GOALS = {
   rental:      { emoji: "🏘️", en: "Rental/Resale Value",    ru: "Для аренды/продажи",      uz: "Ijara/sotish uchun",      prompt: "staging for maximum rental and resale value, neutral appealing palette, modern clean look, broad market appeal" },
   family:      { emoji: "👨‍👩‍👧‍👦", en: "Family-Friendly",       ru: "Для семьи",               uz: "Oila uchun",              prompt: "family-friendly design, durable easy-clean materials, child-safe rounded furniture, practical storage solutions, playful yet elegant" },
 };
+
+// ── Budgets ───────────────────────────────────
+const BUDGETS = {
+  low:     { en: "Under $300",      ru: "До $300",        uz: "$300 gacha",      prompt: "using only affordable furniture and accessories, no renovation, paint and textiles only, thrift store finds" },
+  mid:     { en: "$300 – $1,000",   ru: "$300 – $1 000",  uz: "$300 – $1,000",   prompt: "mix of mid-range and affordable furniture, new area rug, updated lighting fixtures, fresh wall paint" },
+  high:    { en: "$1,000 – $5,000", ru: "$1 000 – $5 000",uz: "$1,000 – $5,000", prompt: "quality designer-inspired furniture, custom window treatments, professional lighting design, premium textiles" },
+  premium: { en: "$5,000+",         ru: "$5 000+",        uz: "$5,000+",         prompt: "luxury high-end furnishings, custom cabinetry, premium natural materials throughout, professional interior design quality" },
+};
