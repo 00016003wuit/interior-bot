@@ -3,6 +3,9 @@ require("dotenv").config();
 const express = require("express");
 const { Telegraf } = require("telegraf");
 const { fal } = require("@fal-ai/client");
+const helmet = require("helmet");
+const cors = require("cors");
+const rateLimit = require("express-rate-limit");
 const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
@@ -260,6 +263,32 @@ function buildPrompt(params) {
 
 // ── Express setup ─────────────────────────────
 const app = express();
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: false,  // Disabled for Telegram WebApp inline scripts
+  crossOriginEmbedderPolicy: false,
+}));
+app.use(cors({
+  origin: [APP_URL, "https://web.telegram.org", "https://telegram.org"],
+  methods: ["GET", "POST"],
+}));
+
+// Rate limiting — prevent API abuse
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,  // 15 minutes
+  max: 100,                    // max 100 requests per window per IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later" },
+});
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000,   // 1 minute
+  max: 5,                 // max 5 generation requests per minute
+  message: { error: "Generation rate limit exceeded, please wait" },
+});
+app.use("/api/", apiLimiter);
+
 app.use(express.json({ limit: "1mb" }));
 
 // Multer for photo uploads
@@ -389,7 +418,7 @@ app.post("/api/upload", upload_mw.array("photos", 3), async (req, res) => {
 });
 
 // Generate design
-app.post("/api/generate", async (req, res) => {
+app.post("/api/generate", generateLimiter, async (req, res) => {
   const { userId, photoUrl, roomType, styleKey, customPrompt, goal, budget, priorities } = req.body;
 
   if (!userId || !photoUrl) {
@@ -433,7 +462,7 @@ app.post("/api/generate", async (req, res) => {
 });
 
 // Modify existing design
-app.post("/api/modify", async (req, res) => {
+app.post("/api/modify", generateLimiter, async (req, res) => {
   const { userId, generatedUrl, modificationText } = req.body;
 
   if (!userId || !generatedUrl || !modificationText) {
