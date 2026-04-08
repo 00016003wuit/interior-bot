@@ -1444,6 +1444,16 @@ function updateLandingText() {
   if (sb) sb.textContent = t('shareContact');
   const or = document.getElementById('or-text');
   if (or) or.textContent = state.lang === 'ru' ? 'или' : state.lang === 'uz' ? 'yoki' : 'or';
+  const cb = document.getElementById('splash-continue-btn');
+  if (cb) cb.textContent = t('continue_');
+  const skb = document.getElementById('splash-skip-btn');
+  if (skb) skb.textContent = t('skip');
+  // Pre-fill phone if already known
+  const phoneInput = document.getElementById('splash-phone');
+  if (phoneInput && state.user?.phone) {
+    phoneInput.value = state.user.phone;
+    showPhoneStatus(t('shareContact') + ' ✓');
+  }
 }
 
 function selectPref(key, val) { state.prefs[key] = val; showScreen('onboarding'); }
