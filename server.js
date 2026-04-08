@@ -28,3 +28,46 @@ if (!FAL_KEY) { console.error("ERROR: FAL_KEY not set"); process.exit(1); }
 if (!WEBHOOK_URL) { console.error("ERROR: WEBHOOK_URL not set"); process.exit(1); }
 
 fal.config({ credentials: FAL_KEY });
+
+// ── Data layer ────────────────────────────────
+const DATA_DIR = path.join(__dirname, "data");
+if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+
+// Migrate legacy usage.json from root to data/
+const legacyUsage = path.join(__dirname, "usage.json");
+const newUsage = path.join(DATA_DIR, "usage.json");
+if (fs.existsSync(legacyUsage) && !fs.existsSync(newUsage)) {
+  fs.copyFileSync(legacyUsage, newUsage);
+  console.log("[data] migrated usage.json to data/");
+}
+
+function loadJSON(filename, fallback = {}) {
+  try { return JSON.parse(fs.readFileSync(path.join(DATA_DIR, filename), "utf8")); }
+  catch { return fallback; }
+}
+function saveJSON(filename, data) {
+  fs.writeFileSync(path.join(DATA_DIR, filename), JSON.stringify(data, null, 2));
+}
+
+// Users
+function getUser(userId) {
+  return loadJSON("users.json")[String(userId)] || null;
+}
+function saveUser(userId, fields) {
+  const users = loadJSON("users.json");
+  const existing = users[String(userId)] || {};
+  users[String(userId)] = { ...existing, ...fields, updatedAt: new Date().toISOString() };
+  saveJSON("users.json", users);
+  return users[String(userId)];
+}
+
+// Usage
+function getUsage(userId) {
+  return loadJSON("usage.json")[String(userId)] || 0;
+}
+function incUsage(userId) {
+  const data = loadJSON("usage.json");
+  data[String(userId)] = (data[String(userId)] || 0) + 1;
+  saveJSON("usage.json", data);
+  return data[String(userId)];
+}
