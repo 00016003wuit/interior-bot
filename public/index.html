@@ -240,13 +240,23 @@
       animation: spin .8s linear infinite;
     }
 
-    /* ── Screen: Splash ──────────────────── */
+    /* ── Screen: Splash / Landing ─────────── */
     .splash {
       display: flex;
+      flex-direction: column;
+      min-height: auto;
+      background: var(--bg);
+      overflow-y: auto;
+    }
+    .splash-hero {
+      display: flex;
+      flex-direction: column;
       align-items: center; justify-content: center;
       min-height: 100vh;
-      background: radial-gradient(ellipse at 50% 30%, rgba(124, 58, 237, .2), transparent 70%),
-                  var(--bg);
+      text-align: center;
+      padding: 40px 20px;
+      background: radial-gradient(ellipse at 50% 30%, rgba(124, 58, 237, .2), transparent 70%);
+      position: relative;
     }
     .splash-content { text-align: center; }
     .splash-icon { font-size: 72px; animation: float 3s ease-in-out infinite; display: block; margin-bottom: 20px; }
@@ -257,6 +267,34 @@
       background-clip: text; margin-bottom: 8px;
     }
     .splash-sub { color: var(--text2); font-size: 14px; }
+    .splash-section {
+      padding: 40px 20px 60px;
+      background: linear-gradient(180deg, var(--bg2) 0%, var(--bg) 100%);
+    }
+    .splash-section h3 {
+      font-size: 18px; font-weight: 600;
+      text-align: center;
+      margin-bottom: 16px;
+    }
+    .splash-section .input-field { margin-bottom: 12px; }
+    .splash-section .or-divider {
+      text-align: center;
+      color: var(--text3);
+      font-size: 13px;
+      margin: 16px 0;
+      position: relative;
+    }
+    .splash-section .or-divider::before,
+    .splash-section .or-divider::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      width: 35%;
+      height: 1px;
+      background: var(--border);
+    }
+    .splash-section .or-divider::before { left: 0; }
+    .splash-section .or-divider::after { right: 0; }
     .scroll-arrow {
       margin-top: 32px;
       animation: bounce 2s ease-in-out infinite;
