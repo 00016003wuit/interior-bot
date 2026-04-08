@@ -615,7 +615,7 @@ app.post("/webhook", (req, res) => {
   res.sendStatus(200);
   bot.handleUpdate(req.body);
 });
-app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
+app.get("/health", (_req, res) => res.json({ status: "ok", version: "2.0.0", ts: Date.now() }));
 
 // ── Start ─────────────────────────────────────
 app.listen(PORT, async () => {
