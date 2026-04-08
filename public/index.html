@@ -1068,4 +1068,34 @@ screens.language = (el) => {
       <div class="lang-grid">
         <div class="lang-btn" onclick="selectLang('uz')">
           <span class="flag">\u{1F1FA}\u{1F1FF}</span>
+          <div><div class="lang-name">O'zbek</div><div class="lang-native">O'zbek tili</div></div>
+        </div>
+        <div class="lang-btn" onclick="selectLang('ru')">
+          <span class="flag">\u{1F1F7}\u{1F1FA}</span>
+          <div><div class="lang-name">\u0420\u0443\u0441\u0441\u043a\u0438\u0439</div><div class="lang-native">Russian</div></div>
+        </div>
+        <div class="lang-btn" onclick="selectLang('en')">
+          <span class="flag">\u{1F1EC}\u{1F1E7}</span>
+          <div><div class="lang-name">English</div><div class="lang-native">English</div></div>
+        </div>
+      </div>
+    </div>`;
+};
+
+screens.welcome = (el) => {
+  const name = state.user?.firstName || 'there';
+  el.innerHTML = `
+    <div class="welcome-hero">
+      <div class="avatar">\u{1F3E0}</div>
+      <h1>${t('welcome')}, ${esc(name)}!</h1>
+      <p>${t('appDesc')}</p>
+    </div>
+    <div class="features-list">
+      <div class="feature-item"><span class="icon">\u{1F4F8}</span><div><div class="label">${t('feat1')}</div><div class="desc">${t('feat1d')}</div></div></div>
+      <div class="feature-item"><span class="icon">\u{1F3A8}</span><div><div class="label">${t('feat2')}</div><div class="desc">${t('feat2d')}</div></div></div>
+      <div class="feature-item"><span class="icon">\u2728</span><div><div class="label">${t('feat3')}</div><div class="desc">${t('feat3d')}</div></div></div>
+    </div>
+    <div class="phone-section">
+      <label>${t('phoneTitle')}</label>
+      <input type="tel" class="input-field" id="phone-input" placeholder="${t('phonePlaceholder')}" value="${esc(state.user?.phone || '')}" />
 </script></body></html>
