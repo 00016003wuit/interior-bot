@@ -320,3 +320,30 @@ app.post("/api/auth", (req, res) => {
 
 // Save phone number
 app.post("/api/user/phone", (req, res) => {
+  const { userId, phone } = req.body;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  const user = saveUser(userId, { phone });
+  res.json({ user });
+});
+
+// Save language
+app.post("/api/user/lang", (req, res) => {
+  const { userId, lang } = req.body;
+  if (!userId || !["en", "ru", "uz"].includes(lang)) {
+    return res.status(400).json({ error: "Invalid params" });
+  }
+  const user = saveUser(userId, { lang });
+  res.json({ user });
+});
+
+// Save onboarding preferences
+app.post("/api/user/prefs", (req, res) => {
+  const { userId, prefs } = req.body;
+  if (!userId || !prefs) return res.status(400).json({ error: "Invalid params" });
+  const user = saveUser(userId, { prefs, onboarded: true });
+  res.json({ user });
+});
+
+// Upload photos — returns fal.ai URLs
+app.post("/api/upload", upload_mw.array("photos", 3), async (req, res) => {
+  try {
