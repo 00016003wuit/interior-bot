@@ -1338,4 +1338,19 @@ screens.error = (el) => {
 
 // ── Handlers ─────────────────────────────────
 function esc(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+function selectLang(lang) {
+  state.lang = lang;
+  if (state.user) api('/api/user/lang', { userId: state.user.id, lang }).catch(() => {});
+  showScreen('welcome');
+}
+
+function shareContact() {
+  if (tg?.requestContact) {
+    tg.requestContact((r) => { if (r?.status === 'sent') { toast('Phone number shared!'); setTimeout(refreshUser, 2000); } });
+  } else { toast('Please enter your phone number manually'); }
+}
+
+function submitWelcome(skip) {
+  const phone = document.getElementById('phone-input')?.value?.trim();
 </script></body></html>
