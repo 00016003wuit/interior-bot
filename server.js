@@ -580,3 +580,38 @@ bot.command("lang", (ctx) => {
 });
 
 // Photo in chat → redirect to web app
+bot.on("photo", (ctx) => {
+  return ctx.reply(
+    "📸 Great photo! For the best experience, please use our web app to upload photos and choose your design:",
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
+        ]],
+      },
+    }
+  );
+});
+
+// Text in chat → redirect to web app
+bot.on("message", (ctx) => {
+  return ctx.reply(
+    "Please use the app for designing. Tap below to open:",
+    {
+      reply_markup: {
+        inline_keyboard: [[
+          { text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } },
+        ]],
+      },
+    }
+  );
+});
+
+// ── Serve static & webhook ────────────────────
+app.use(express.static(path.join(__dirname, "public")));
+app.post("/webhook", (req, res) => {
+  console.log("[webhook] update_id:", req.body?.update_id);
+  res.sendStatus(200);
+  bot.handleUpdate(req.body);
+});
+app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
