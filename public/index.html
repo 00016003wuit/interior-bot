@@ -1508,4 +1508,14 @@ async function init() {
     if (data.user?.lang) state.lang = data.user.lang;
     else if (tg?.initDataUnsafe?.user?.language_code) {
       const lc = tg.initDataUnsafe.user.language_code;
+      if (['ru', 'uz'].includes(lc)) state.lang = lc;
+    }
+    if (data.user?.onboarded && data.user?.lang) {
+      if (data.user.prefs) state.prefs = { ...state.prefs, ...data.user.prefs };
+      showScreen('upload');
+      return;
+    }
+  } catch (err) { console.error('Init failed:', err); }
+  showScreen('language');
+}
 </script></body></html>
