@@ -1412,6 +1412,13 @@ function selectLang(lang) {
 function showPhoneStatus(msg) {
   const el = document.getElementById('phone-status');
   if (el) { el.textContent = msg; el.style.display = 'block'; }
+  showPhoneArrow();
+}
+
+function showPhoneArrow() {
+  const arrow = document.getElementById('phone-next-arrow');
+  const phone = document.getElementById('splash-phone')?.value?.trim();
+  if (arrow) arrow.style.display = (phone || state.user?.phone) ? 'block' : 'none';
 }
 
 async function pollForPhone(maxAttempts = 10) {
@@ -1502,16 +1509,13 @@ function updateLandingText() {
   if (sb) sb.textContent = t('shareContact');
   const or = document.getElementById('or-text');
   if (or) or.textContent = state.lang === 'ru' ? 'или' : state.lang === 'uz' ? 'yoki' : 'or';
-  const cb = document.getElementById('splash-continue-btn');
-  if (cb) cb.textContent = t('continue_');
-  const skb = document.getElementById('splash-skip-btn');
-  if (skb) skb.textContent = t('skip');
   // Pre-fill phone if already known
   const phoneInput = document.getElementById('splash-phone');
   if (phoneInput && state.user?.phone) {
     phoneInput.value = state.user.phone;
     showPhoneStatus(t('shareContact') + ' ✓');
   }
+  showPhoneArrow();
 }
 
 function selectPref(key, val) { state.prefs[key] = val; showScreen('onboarding'); }
@@ -1546,6 +1550,9 @@ function goBack() {
 async function refreshUser() {
   try { const d = await api('/api/auth', { initData: tg?.initData || '' }); if (d.user) state.user = d.user; if (d.usage) state.usage = d.usage; } catch {}
 }
+
+// Phone input — show arrow when number is entered
+document.getElementById('splash-phone').addEventListener('input', () => showPhoneArrow());
 
 // File input handler
 document.getElementById('file-input').addEventListener('change', (e) => {
