@@ -615,3 +615,18 @@ app.post("/webhook", (req, res) => {
   bot.handleUpdate(req.body);
 });
 app.get("/health", (_req, res) => res.json({ status: "ok", ts: Date.now() }));
+
+// ── Start ─────────────────────────────────────
+app.listen(PORT, async () => {
+  console.log(`[server] listening on port ${PORT}`);
+  try {
+    await bot.telegram.setWebhook(`${WEBHOOK_URL}/webhook`);
+    console.log(`[bot] webhook set: ${WEBHOOK_URL}/webhook`);
+  } catch (err) {
+    console.error("[bot] setWebhook failed:", err.message);
+    process.exit(1);
+  }
+});
+
+process.once("SIGINT", () => bot.telegram.deleteWebhook().finally(() => process.exit(0)));
+process.once("SIGTERM", () => bot.telegram.deleteWebhook().finally(() => process.exit(0)));
