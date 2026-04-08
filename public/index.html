@@ -128,4 +128,84 @@
       border-radius: var(--radius-s);
       width: auto;
     }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      transition: var(--transition);
+    }
+    .card.selectable { cursor: pointer; }
+    .card.selectable:active { transform: scale(.97); }
+    .card.selected {
+      border-color: var(--primary);
+      background: rgba(124, 58, 237, .08);
+      box-shadow: 0 0 0 1px var(--primary);
+    }
+
+    .chip {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 14px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 13px;
+      cursor: pointer; transition: var(--transition);
+      color: var(--text2);
+      white-space: nowrap;
+    }
+    .chip:active { transform: scale(.95); }
+    .chip.selected {
+      background: rgba(124, 58, 237, .15);
+      border-color: var(--primary);
+      color: var(--primary-light);
+    }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 4px 10px;
+      background: rgba(124, 58, 237, .12);
+      border: 1px solid rgba(124, 58, 237, .25);
+      border-radius: 100px;
+      font-size: 11px; font-weight: 600;
+      color: var(--primary-light);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+    }
+
+    .progress-bar {
+      width: 100%; height: 6px;
+      background: var(--surface3);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      border-radius: 3px;
+      transition: width .5s ease;
+    }
+
+    .input-field {
+      width: 100%; padding: 14px 16px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-s);
+      color: var(--text);
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      transition: var(--transition);
+    }
+    .input-field:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(124, 58, 237, .15);
+    }
+    .input-field::placeholder { color: var(--text3); }
+    textarea.input-field { min-height: 100px; resize: vertical; }
+
+    .step-dots {
+      display: flex; gap: 6px; justify-content: center; margin: 12px 0;
+    }
 </style></head><body></body></html>
