@@ -1473,17 +1473,16 @@ function submitWelcome(skip) {
   showScreen('onboarding');
 }
 
-function splashContinue(skip) {
+function splashContinue() {
   const phone = document.getElementById('splash-phone')?.value?.trim();
-  if (!skip && !phone && !state.user?.phone) {
-    // Highlight phone input if empty and not skipping
+  if (!phone && !state.user?.phone) {
     const phoneInput = document.getElementById('splash-phone');
     if (phoneInput) {
       phoneInput.style.borderColor = 'var(--warning)';
       phoneInput.focus();
       setTimeout(() => { phoneInput.style.borderColor = ''; }, 2000);
     }
-    toast(state.lang === 'ru' ? 'Введите номер или нажмите "Пропустить"' : state.lang === 'uz' ? 'Raqam kiriting yoki "O\'tkazib yuborish" bosing' : 'Enter number or tap "Skip"');
+    toast(state.lang === 'ru' ? 'Введите номер телефона' : state.lang === 'uz' ? 'Telefon raqamini kiriting' : 'Please enter your phone number');
     return;
   }
   if (phone && state.user) {
