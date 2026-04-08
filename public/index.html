@@ -1246,4 +1246,16 @@ screens.generating = (el) => {
     }, (i + 1) * 8000);
   });
 };
+
+screens.result = (el) => {
+  const r = state.result;
+  if (!r) return;
+  const sty = state.selectedStyle && STYLES[state.selectedStyle] ? `${STYLES[state.selectedStyle].emoji} ${label(STYLES[state.selectedStyle])}` : (state.customPrompt ? '\u270F\uFE0F Custom' : '-');
+  const gol = state.prefs.goal && GOALS[state.prefs.goal] ? `${GOALS[state.prefs.goal].emoji} ${label(GOALS[state.prefs.goal])}` : '-';
+  const bud = state.prefs.budget && BUDGETS[state.prefs.budget] ? label(BUDGETS[state.prefs.budget]) : '-';
+  const ub = Array.from({length: state.usage.limit}, (_, i) => `<div class="usage-block ${i < state.usage.used ? 'used' : ''}"></div>`).join('');
+
+  el.innerHTML = `
+    <div class="result-header">
+      <h2>${t('resultTitle')}</h2>
 </script></body></html>
