@@ -210,3 +210,49 @@ async function runEdit(imageUrl, prompt) {
   console.log(`[fal] done: ${finalUrl}`);
   return finalUrl;
 }
+
+// Build a full prompt from all parameters
+function buildPrompt(params) {
+  const { roomType, styleKey, customPrompt, goal, budget, priorities } = params;
+  const parts = [];
+
+  // Room type
+  const room = ROOM_TYPES[roomType];
+  if (room) parts.push(room.prompt);
+
+  // Style prompt or custom description
+  if (styleKey && STYLES[styleKey]) {
+    parts.push(STYLES[styleKey].prompt);
+  } else if (customPrompt) {
+    parts.push(`${PRESERVE}, ${customPrompt}`);
+  }
+
+  // Goal modifier
+  if (goal && GOALS[goal]) {
+    parts.push(GOALS[goal].prompt);
+  }
+
+  // Budget modifier
+  if (budget && BUDGETS[budget]) {
+    parts.push(BUDGETS[budget].prompt);
+  }
+
+  // Priority modifiers
+  if (priorities && priorities.length > 0) {
+    const prioPrompts = {
+      coziness: "emphasize warmth and comfort",
+      storage: "smart hidden storage solutions",
+      lighting: "excellent layered lighting design",
+      workspace: "dedicated functional work area",
+      premium_look: "expensive premium appearance",
+      easy_clean: "easy to clean minimal dust-collecting surfaces",
+      natural_light: "maximize natural light flow",
+      space: "maximize perceived space and openness",
+    };
+    const prioText = priorities.map(p => prioPrompts[p]).filter(Boolean).join(", ");
+    if (prioText) parts.push(prioText);
+  }
+
+  parts.push(QUALITY);
+  return parts.join(", ");
+}
