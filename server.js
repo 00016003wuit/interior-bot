@@ -270,3 +270,53 @@ const upload_mw = multer({
     else cb(new Error("Only images allowed"));
   },
 });
+
+// ── API routes ────────────────────────────────
+
+// Auth — verify Telegram initData, return/create user
+app.post("/api/auth", (req, res) => {
+  const { initData } = req.body;
+
+  // In development, allow bypassing auth
+  let telegramUser = verifyInitData(initData);
+
+  if (!telegramUser && initData) {
+    // Try parsing initDataUnsafe for development
+    try {
+      const params = new URLSearchParams(initData);
+      const userStr = params.get("user");
+      if (userStr) telegramUser = JSON.parse(userStr);
+    } catch {}
+  }
+
+  if (!telegramUser) {
+    return res.status(401).json({ error: "Invalid auth" });
+  }
+
+  const userId = telegramUser.id;
+  let user = getUser(userId);
+
+  if (!user) {
+    user = saveUser(userId, {
+      id: userId,
+      firstName: telegramUser.first_name || "",
+      lastName: telegramUser.last_name || "",
+      username: telegramUser.username || "",
+      languageCode: telegramUser.language_code || "en",
+      phone: null,
+      lang: null,
+      prefs: null,
+      onboarded: false,
+      createdAt: new Date().toISOString(),
+    });
+  }
+
+  const usage = getUsage(userId);
+  res.json({
+    user,
+    usage: { used: usage, limit: FREE_LIMIT, remaining: Math.max(0, FREE_LIMIT - usage) },
+  });
+});
+
+// Save phone number
+app.post("/api/user/phone", (req, res) => {
