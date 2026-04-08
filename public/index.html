@@ -1601,6 +1601,7 @@ async function init() {
       const lc = tg.initDataUnsafe.user.language_code;
       if (['ru', 'uz'].includes(lc)) state.lang = lc;
     }
+    // Returning user who already onboarded — go straight to upload
     if (data.user?.onboarded && data.user?.lang) {
       if (data.user.prefs) state.prefs = { ...state.prefs, ...data.user.prefs };
       showScreen('upload');
@@ -1614,13 +1615,9 @@ async function init() {
       state.user = { id: u.id, firstName: u.first_name || '', lastName: u.last_name || '' };
     }
   }
-  showScreen('language');
+  // New user — stay on landing, update text with their name
+  updateLandingText();
 }
-
-// Safety: if init takes too long, force show language screen
-const initTimeout = setTimeout(() => {
-  if (state.currentScreen === 'splash') showScreen('language');
-}, 5000);
 
 setTimeout(() => { init().finally(() => clearTimeout(initTimeout)); }, 800);
 </script>
