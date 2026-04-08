@@ -528,3 +528,13 @@ bot.on("contact", (ctx) => {
   return ctx.reply("Phone number saved! ✓");
 });
 
+// /help
+bot.command("help", (ctx) => {
+  return ctx.reply(
+    "🏠 *LiveSpace AI — Help*\n\n" +
+    "Tap the button below to open the app and:\n" +
+    "1\\. Upload a room photo\n" +
+    "2\\. Choose your style, goal, and budget\n" +
+    "3\\. Get an AI\\-powered redesign\\!\n\n" +
+    `✨ First ${FREE_LIMIT} designs FREE\n` +
+    `💳 Then ${PACK_PRICE.toLocaleString()} UZS for 3 more\n\n` +
