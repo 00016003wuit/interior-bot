@@ -714,9 +714,10 @@
       <input type="tel" class="input-field" id="splash-phone" placeholder="+998 XX XXX XX XX" />
       <div class="or-divider" id="or-text">or</div>
       <button class="btn btn-secondary" onclick="shareContact()" id="share-btn">Share from Telegram</button>
+      <div id="phone-status" style="text-align:center;margin-top:12px;font-size:13px;color:var(--success);display:none;"></div>
       <div style="margin-top:24px;">
-        <button class="btn btn-primary" onclick="splashContinue()">Continue</button>
-        <button class="btn btn-ghost" onclick="splashContinue(true)">Skip</button>
+        <button class="btn btn-primary" id="splash-continue-btn" onclick="splashContinue()">Continue</button>
+        <button class="btn btn-ghost" id="splash-skip-btn" onclick="splashContinue(true)">Skip</button>
       </div>
     </div>
   </div>
