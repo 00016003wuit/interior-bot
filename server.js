@@ -347,3 +347,34 @@ app.post("/api/user/prefs", (req, res) => {
 // Upload photos — returns fal.ai URLs
 app.post("/api/upload", upload_mw.array("photos", 3), async (req, res) => {
   try {
+    const files = req.files;
+    if (!files || files.length === 0) {
+      return res.status(400).json({ error: "No photos provided" });
+    }
+
+    const urls = [];
+    for (const file of files) {
+      const url = await uploadImage(file.buffer);
+      urls.push(url);
+    }
+
+    const userId = req.body.userId;
+    if (userId) {
+      setSession(userId, {
+        photos: urls,
+        roomType: null,
+        results: [],
+      });
+    }
+
+    res.json({ urls });
+  } catch (err) {
+    console.error("[api/upload]", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generate design
+app.post("/api/generate", async (req, res) => {
+  const { userId, photoUrl, roomType, styleKey, customPrompt, goal, budget, priorities } = req.body;
+
