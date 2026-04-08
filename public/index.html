@@ -1213,4 +1213,19 @@ screens.styles = (el) => {
 };
 
 screens.custom = (el) => {
+  el.innerHTML = `
+    <div class="top-bar"><div class="back-btn" onclick="goBack()">\u2190</div><div class="top-title">${t('customTitle')}</div></div>
+    <div class="screen-body">
+      <p class="mb-16" style="font-size:13px;color:var(--text2);">${t('customHint')}</p>
+      <textarea class="input-field" id="custom-prompt" placeholder="${t('customPlaceholder')}" oninput="state.customPrompt=this.value;document.getElementById('cgen').disabled=!this.value.trim()">${esc(state.customPrompt)}</textarea>
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" id="cgen" ${state.customPrompt.trim() ? '' : 'disabled'} onclick="startGeneration()">${t('generateBtn')}</button>
+    </div>`;
+};
+
+screens.generating = (el) => {
+  el.innerHTML = `
+    <div class="generating-screen">
+      <div class="gen-visual">\u{1F3E0}</div>
 </script></body></html>
