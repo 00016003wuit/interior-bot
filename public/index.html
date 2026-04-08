@@ -257,7 +257,21 @@
       background-clip: text; margin-bottom: 8px;
     }
     .splash-sub { color: var(--text2); font-size: 14px; }
-    .splash .spinner { margin: 24px auto 0; }
+    .scroll-arrow {
+      margin-top: 32px;
+      animation: bounce 2s ease-in-out infinite;
+      cursor: pointer;
+      font-size: 28px;
+      color: var(--primary-light);
+      opacity: .7;
+      transition: opacity .3s;
+    }
+    .scroll-arrow:hover { opacity: 1; }
+    @keyframes bounce {
+      0%,20%,50%,80%,100% { transform: translateY(0); }
+      40% { transform: translateY(10px); }
+      60% { transform: translateY(5px); }
+    }
 
     /* ── Screen: Language ────────────────── */
     .lang-grid {
