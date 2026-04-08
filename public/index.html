@@ -1412,10 +1412,59 @@ function selectLang(lang) {
   showScreen('onboarding');
 }
 
+function showPhoneStatus(msg) {
+  const el = document.getElementById('phone-status');
+  if (el) { el.textContent = msg; el.style.display = 'block'; }
+}
+
+async function pollForPhone(maxAttempts = 8) {
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise(r => setTimeout(r, 1500));
+    try {
+      const d = await api('/api/auth', { initData: tg?.initData || '', user: tg?.initDataUnsafe?.user || null });
+      if (d.user?.phone) {
+        state.user = d.user;
+        state.usage = d.usage;
+        const phoneInput = document.getElementById('splash-phone');
+        if (phoneInput) phoneInput.value = d.user.phone;
+        showPhoneStatus('✓ ' + d.user.phone);
+        return true;
+      }
+    } catch {}
+  }
+  return false;
+}
+
 function shareContact() {
+  // Method 1: Telegram WebApp requestContact API
   if (tg?.requestContact) {
-    tg.requestContact((r) => { if (r?.status === 'sent') { toast('Phone number shared!'); setTimeout(refreshUser, 2000); } });
-  } else { toast('Please enter your phone number manually'); }
+    const btn = document.getElementById('share-btn');
+    const origText = btn?.textContent;
+    if (btn) { btn.textContent = '...'; btn.disabled = true; }
+    try {
+      tg.requestContact((result) => {
+        if (result?.status === 'sent' || result === true) {
+          showPhoneStatus(state.lang === 'ru' ? 'Получаем номер...' : state.lang === 'uz' ? 'Raqam olinmoqda...' : 'Getting number...');
+          pollForPhone().then(ok => {
+            if (btn) { btn.textContent = origText; btn.disabled = false; }
+            if (ok) toast(state.lang === 'ru' ? 'Номер сохранён!' : state.lang === 'uz' ? 'Raqam saqlandi!' : 'Phone saved!');
+            else showPhoneStatus(state.lang === 'ru' ? 'Введите номер вручную' : state.lang === 'uz' ? 'Raqamni qo\'lda kiriting' : 'Enter number manually');
+          });
+        } else {
+          if (btn) { btn.textContent = origText; btn.disabled = false; }
+          toast(state.lang === 'ru' ? 'Введите номер вручную' : state.lang === 'uz' ? 'Raqamni qo\'lda kiriting' : 'Enter your number manually');
+        }
+      });
+    } catch (e) {
+      if (btn) { btn.textContent = origText; btn.disabled = false; }
+      toast(state.lang === 'ru' ? 'Введите номер вручную' : state.lang === 'uz' ? 'Raqamni qo\'lda kiriting' : 'Enter your number manually');
+    }
+  } else {
+    // No requestContact API — focus the manual input
+    const phoneInput = document.getElementById('splash-phone');
+    if (phoneInput) phoneInput.focus();
+    toast(state.lang === 'ru' ? 'Введите номер вручную' : state.lang === 'uz' ? 'Raqamni qo\'lda kiriting' : 'Enter your number manually');
+  }
 }
 
 function submitWelcome(skip) {
