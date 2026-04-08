@@ -143,3 +143,15 @@ const BUDGETS = {
   high:    { en: "$1,000 – $5,000", ru: "$1 000 – $5 000",uz: "$1,000 – $5,000", prompt: "quality designer-inspired furniture, custom window treatments, professional lighting design, premium textiles" },
   premium: { en: "$5,000+",         ru: "$5 000+",        uz: "$5,000+",         prompt: "luxury high-end furnishings, custom cabinetry, premium natural materials throughout, professional interior design quality" },
 };
+
+// ── Priorities ────────────────────────────────
+const PRIORITIES = {
+  coziness:    { emoji: "🛋️", en: "Coziness",      ru: "Уют",              uz: "Qulaylik" },
+  storage:     { emoji: "📦", en: "Storage",        ru: "Хранение",         uz: "Saqlash" },
+  lighting:    { emoji: "💡", en: "Lighting",       ru: "Освещение",        uz: "Yoritish" },
+  workspace:   { emoji: "🖥️", en: "Workspace",      ru: "Рабочая зона",     uz: "Ish joyi" },
+  premium_look:{ emoji: "✨", en: "Premium Look",   ru: "Премиум вид",      uz: "Premium ko'rinish" },
+  easy_clean:  { emoji: "🧹", en: "Easy Cleaning",  ru: "Лёгкая уборка",    uz: "Oson tozalash" },
+  natural_light:{ emoji: "☀️", en: "Natural Light",  ru: "Естественный свет", uz: "Tabiiy yorug'lik" },
+  space:       { emoji: "📐", en: "More Space",     ru: "Больше места",     uz: "Ko'proq joy" },
+};
