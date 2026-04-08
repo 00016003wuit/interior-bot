@@ -1143,4 +1143,54 @@ screens.onboarding = (el) => {
       ).join('')}</div>`;
   }
 
+  const canNext = step === 0 ? state.prefs.roomType : step === 1 ? state.prefs.goal : step === 2 ? state.prefs.budget : true;
+
+  el.innerHTML = `
+    <div class="top-bar"><div class="back-btn" onclick="onboardBack()">\u2190</div><div class="top-title">${step + 1}/${total}</div></div>
+    <div class="step-dots">${dots}</div>
+    <div class="screen-body">${content}</div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" ${canNext ? '' : 'disabled'} onclick="onboardNext()">${step === total - 1 ? t('letsGo') : t('next')}</button>
+      ${step === 3 ? `<button class="btn btn-ghost" onclick="onboardNext()">${t('skip')}</button>` : ''}
+    </div>`;
+};
+
+screens.upload = (el) => {
+  const previews = state.photos.map((p, i) =>
+    `<div class="photo-preview"><img src="${p.preview}" /><button class="remove-photo" onclick="removePhoto(${i})">\u2715</button></div>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="top-bar"><div class="back-btn" onclick="goBack()">\u2190</div><div class="top-title">${t('uploadTitle')}</div></div>
+    <div class="screen-body">
+      <div class="screen-header"><p>${t('uploadDesc')}</p></div>
+      <div class="upload-zone" onclick="document.getElementById('file-input').click()">
+        <span class="upload-icon">\u{1F4F8}</span>
+        <div class="upload-text">${t('uploadBtn')}</div>
+        <div class="upload-hint">${t('uploadHint')}</div>
+      </div>
+      ${previews ? `<div class="photo-previews">${previews}</div>` : ''}
+      ${state.photos.length > 0 ? `<p class="text-center mt-8" style="font-size:13px;color:var(--text2);">${state.photos.length} ${t('photosSelected')}</p>` : ''}
+    </div>
+    <div class="screen-footer">
+      <button class="btn btn-primary" ${state.photos.length === 0 ? 'disabled' : ''} onclick="showScreen('designMode')">${t('continue_')}</button>
+    </div>`;
+};
+
+screens.designMode = (el) => {
+  el.innerHTML = `
+    <div class="top-bar"><div class="back-btn" onclick="goBack()">\u2190</div><div class="top-title">${t('modeTitle')}</div></div>
+    <div class="screen-body">
+      <div class="mode-cards mt-16">
+        <div class="card selectable mode-card" onclick="state.designMode='styles';showScreen('styles')">
+          <span class="mode-icon">\u{1F3A8}</span>
+          <div class="mode-info"><h3>${t('browseStyles')}</h3><p>${t('browseDesc')}</p></div>
+        </div>
+        <div class="card selectable mode-card" onclick="state.designMode='custom';showScreen('custom')">
+          <span class="mode-icon">\u270F\uFE0F</span>
+          <div class="mode-info"><h3>${t('describeVision')}</h3><p>${t('describeDesc')}</p></div>
+        </div>
+      </div>
+    </div>`;
+};
 </script></body></html>
