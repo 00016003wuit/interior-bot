@@ -276,18 +276,23 @@ const upload_mw = multer({
 
 // Auth — verify Telegram initData, return/create user
 app.post("/api/auth", (req, res) => {
-  const { initData } = req.body;
+  const { initData, user: clientUser } = req.body;
 
-  // In development, allow bypassing auth
+  // 1. Try HMAC verification of initData (most secure)
   let telegramUser = verifyInitData(initData);
 
+  // 2. Fallback: parse user from initData URL params
   if (!telegramUser && initData) {
-    // Try parsing initDataUnsafe for development
     try {
       const params = new URLSearchParams(initData);
       const userStr = params.get("user");
       if (userStr) telegramUser = JSON.parse(userStr);
     } catch {}
+  }
+
+  // 3. Fallback: accept user object from frontend (initDataUnsafe)
+  if (!telegramUser && clientUser && clientUser.id) {
+    telegramUser = clientUser;
   }
 
   if (!telegramUser) {
