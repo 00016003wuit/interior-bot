@@ -332,6 +332,14 @@ app.post("/api/user/phone", (req, res) => {
   res.json({ user });
 });
 
+// Get user phone (for polling after requestContact)
+app.post("/api/user/check-phone", (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+  const user = getUser(userId);
+  res.json({ phone: user?.phone || null });
+});
+
 // Save language
 app.post("/api/user/lang", (req, res) => {
   const { userId, lang } = req.body;
