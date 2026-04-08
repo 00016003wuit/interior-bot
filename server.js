@@ -113,3 +113,13 @@ function verifyInitData(initDataRaw) {
     return null;
   }
 }
+
+// ── Room types ────────────────────────────────
+const ROOM_TYPES = {
+  living:   { emoji: "🛋️", en: "Living Room",  ru: "Гостиная",   uz: "Mehmonxona",   prompt: "living room" },
+  bedroom:  { emoji: "🛏️", en: "Bedroom",      ru: "Спальня",    uz: "Yotoqxona",    prompt: "bedroom" },
+  kitchen:  { emoji: "🍳", en: "Kitchen",      ru: "Кухня",      uz: "Oshxona",      prompt: "kitchen" },
+  bathroom: { emoji: "🛁", en: "Bathroom",     ru: "Ванная",     uz: "Hammom",       prompt: "bathroom" },
+  office:   { emoji: "🏢", en: "Office",       ru: "Офис",       uz: "Ofis",         prompt: "home office" },
+  dining:   { emoji: "🍽️", en: "Dining Room",  ru: "Столовая",   uz: "Ovqat xonasi", prompt: "dining room" },
+};
