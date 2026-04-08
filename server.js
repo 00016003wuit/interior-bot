@@ -15,7 +15,8 @@ const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || WEBHOOK_URL;
 const FREE_LIMIT = 3;
-const PACK_PRICE = 10000; // UZS
+const PACK_SIZE = 3;     // designs per pack
+const PACK_PRICE = 10000; // UZS per pack
 
 console.log("TELEGRAM_BOT_TOKEN :", TOKEN ? TOKEN.slice(0, 8) + "..." : "MISSING");
 console.log("FAL_KEY            :", FAL_KEY ? FAL_KEY.slice(0, 8) + "..." : "MISSING");
