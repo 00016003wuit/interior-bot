@@ -475,3 +475,31 @@ app.get("/api/data", (req, res) => {
   res.json({
     rooms: Object.fromEntries(
       Object.entries(ROOM_TYPES).map(([k, v]) => [k, { emoji: v.emoji, en: v.en, ru: v.ru, uz: v.uz }])
+    ),
+    styles: Object.fromEntries(
+      Object.entries(STYLES).map(([k, v]) => [k, { emoji: v.emoji, en: v.en, ru: v.ru, uz: v.uz }])
+    ),
+    goals: Object.fromEntries(
+      Object.entries(GOALS).map(([k, v]) => [k, { emoji: v.emoji, en: v.en, ru: v.ru, uz: v.uz }])
+    ),
+    budgets: Object.fromEntries(
+      Object.entries(BUDGETS).map(([k, v]) => [k, { en: v.en, ru: v.ru, uz: v.uz }])
+    ),
+    priorities: Object.fromEntries(
+      Object.entries(PRIORITIES).map(([k, v]) => [k, { emoji: v.emoji, en: v.en, ru: v.ru, uz: v.uz }])
+    ),
+    freeLimit: FREE_LIMIT,
+    packPrice: PACK_PRICE,
+  });
+});
+
+// ── Telegram Bot ──────────────────────────────
+const bot = new Telegraf(TOKEN);
+
+bot.catch((err, ctx) => {
+  console.error("[bot:error]", ctx.updateType, err.message);
+});
+
+// /start — send welcome with web app button
+bot.start((ctx) => {
+  const firstName = ctx.from.first_name || "there";
