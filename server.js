@@ -88,3 +88,28 @@ function setSession(userId, data) {
 function clearSession(userId) {
   sessions.delete(String(userId));
 }
+
+// ── Telegram WebApp auth ──────────────────────
+function verifyInitData(initDataRaw) {
+  if (!initDataRaw) return null;
+  try {
+    const params = new URLSearchParams(initDataRaw);
+    const hash = params.get("hash");
+    if (!hash) return null;
+    params.delete("hash");
+
+    const entries = [...params.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+    const dataCheckString = entries.map(([k, v]) => `${k}=${v}`).join("\n");
+
+    const secretKey = crypto.createHmac("sha256", "WebAppData").update(TOKEN).digest();
+    const computed = crypto.createHmac("sha256", secretKey).update(dataCheckString).digest("hex");
+
+    if (computed !== hash) return null;
+
+    const userStr = params.get("user");
+    if (!userStr) return null;
+    return JSON.parse(userStr);
+  } catch {
+    return null;
+  }
+}
