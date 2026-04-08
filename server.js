@@ -14,7 +14,7 @@ const FAL_KEY = process.env.FAL_KEY;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || WEBHOOK_URL;
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 5;
 const PACK_SIZE = 3;     // designs per pack
 const PACK_PRICE = 10000; // UZS per pack
 
