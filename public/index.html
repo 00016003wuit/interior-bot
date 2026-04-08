@@ -1258,4 +1258,24 @@ screens.result = (el) => {
   el.innerHTML = `
     <div class="result-header">
       <h2>${t('resultTitle')}</h2>
+      <div class="badge">${state.usage.remaining} ${t('freeDesigns')}</div>
+    </div>
+    <div style="padding:0 20px;">
+      <div class="comparison-container" id="comparison">
+        <img src="${r.generatedUrl}" class="comparison-after" alt="After" />
+        <img src="${r.originalUrl}" class="comparison-before" id="comp-before" alt="Before" />
+        <div class="comparison-slider" id="comp-slider"></div>
+        <span class="comparison-label before">${t('before')}</span>
+        <span class="comparison-label after">${t('after')}</span>
+      </div>
+    </div>
+    <div class="result-actions">
+      <button class="btn btn-primary btn-sm" onclick="showScreen('modify')">\u270F\uFE0F ${t('modifyBtn')}</button>
+      <button class="btn btn-secondary btn-sm" onclick="tryAnother()">\u{1F3A8} ${t('tryStyle')}</button>
+      <button class="btn btn-secondary btn-sm" onclick="shareResult()">\u2197 ${t('shareBtn')}</button>
+    </div>
+    <div class="result-info">
+      <div class="info-card">
+        <h4>\u{1F3A8} ${t('designInfo')}</h4>
+        <div class="info-row"><span class="label">${t('styleLabel')}</span><span>${sty}</span></div>
 </script></body></html>
