@@ -7,69 +7,11 @@
  * as they require external fal.ai API calls.
  */
 
-const http = require("http");
-
-// Set up test environment variables before requiring server
-process.env.TELEGRAM_BOT_TOKEN = "test:AAHfake_token_for_testing";
-process.env.FAL_KEY = "test-fal-key-for-testing";
-process.env.WEBHOOK_URL = "https://test.example.com";
-process.env.APP_URL = "https://test.example.com";
-process.env.PORT = "0"; // Let OS assign a random port
-
-let server;
-let baseUrl;
-
-// Helper to make HTTP requests
-function request(path, body = {}) {
-  return new Promise((resolve, reject) => {
-    const data = JSON.stringify(body);
-    const url = new URL(path, baseUrl);
-    const req = http.request(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(data),
-      },
-    }, (res) => {
-      let responseData = "";
-      res.on("data", (chunk) => responseData += chunk);
-      res.on("end", () => {
-        try {
-          resolve({ status: res.statusCode, body: JSON.parse(responseData) });
-        } catch {
-          resolve({ status: res.statusCode, body: responseData });
-        }
-      });
-    });
-    req.on("error", reject);
-    req.write(data);
-    req.end();
-  });
-}
-
-beforeAll((done) => {
-  // Clear module cache to get fresh instance
-  delete require.cache[require.resolve("../server.js")];
-
-  // Suppress console output during tests
-  jest.spyOn(console, "log").mockImplementation(() => {});
-  jest.spyOn(console, "error").mockImplementation(() => {});
-
-  // The server module starts listening automatically, so we need to
-  // intercept the app. We'll use a simpler approach:
-  const express = require("express");
-
-  // Since server.js starts automatically, we test via HTTP
-  // Wait a moment for the server to start
-  setTimeout(() => {
-    // Use a direct approach — test the server as-is
-    done();
-  }, 2000);
-}, 10000);
-
-afterAll(() => {
-  jest.restoreAllMocks();
-});
+/**
+ * Note: Full API integration tests require a running server with
+ * valid environment variables. These tests validate data structures
+ * and business logic independently.
+ */
 
 // ── Auth endpoint tests ─────────────────────────
 describe("POST /api/auth", () => {
