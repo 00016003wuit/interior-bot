@@ -319,7 +319,7 @@ async function uploadImage(buffer) {
 
 /**
  * Validates that an image contains a home interior (room, living space, etc.)
- * using Claude vision. Returns { valid: true } or { valid: false, reason: string }.
+ * using a vision-capable AI model. Returns { valid: true } or { valid: false, reason: string }.
  * If ANTHROPIC_API_KEY is not set, validation is skipped (returns valid).
  * @param {Buffer} buffer - Raw image bytes
  * @param {string} mimeType - Image MIME type (e.g. "image/jpeg")
