@@ -20,8 +20,8 @@ const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || WEBHOOK_URL;
 const FREE_LIMIT = 5;
-const PACK_SIZE = 3;     // designs per pack
-const PACK_PRICE = 10000; // UZS per pack
+const PACK_SIZE = 5;          // designs per pack
+const PACK_PRICE_STARS = 50;  // Telegram Stars per pack
 
 console.log("TELEGRAM_BOT_TOKEN :", TOKEN ? TOKEN.slice(0, 8) + "..." : "MISSING");
 console.log("FAL_KEY            :", FAL_KEY ? FAL_KEY.slice(0, 8) + "..." : "MISSING");
@@ -113,6 +113,60 @@ function incUsage(userId) {
   data[String(userId)] = (data[String(userId)] || 0) + 1;
   saveJSON("usage.json", data);
   return data[String(userId)];
+}
+
+/**
+ * Gets the number of paid (purchased) design credits available to a user.
+ * @param {number|string} userId - Telegram user ID
+ * @returns {number} Paid credits remaining
+ */
+function getPaidCredits(userId) {
+  return loadJSON("credits.json")[String(userId)] || 0;
+}
+
+/**
+ * Adds purchased credits to a user's balance.
+ * @param {number|string} userId - Telegram user ID
+ * @param {number} amount - Credits to add
+ * @returns {number} New paid credits balance
+ */
+function addPaidCredits(userId, amount) {
+  const data = loadJSON("credits.json");
+  data[String(userId)] = (data[String(userId)] || 0) + amount;
+  saveJSON("credits.json", data);
+  return data[String(userId)];
+}
+
+/**
+ * Consumes one paid credit from a user's balance, if available.
+ * @param {number|string} userId - Telegram user ID
+ * @returns {boolean} True if a credit was consumed, false if balance was zero
+ */
+function consumePaidCredit(userId) {
+  const data = loadJSON("credits.json");
+  const cur = data[String(userId)] || 0;
+  if (cur <= 0) return false;
+  data[String(userId)] = cur - 1;
+  saveJSON("credits.json", data);
+  return true;
+}
+
+/**
+ * Computes a user's total available designs (free remaining + paid credits).
+ * @param {number|string} userId
+ * @returns {{used: number, limit: number, freeRemaining: number, paidCredits: number, remaining: number}}
+ */
+function getUserUsage(userId) {
+  const used = getUsage(userId);
+  const paidCredits = getPaidCredits(userId);
+  const freeRemaining = Math.max(0, FREE_LIMIT - used);
+  return {
+    used,
+    limit: FREE_LIMIT,
+    freeRemaining,
+    paidCredits,
+    remaining: freeRemaining + paidCredits,
+  };
 }
 
 // Sessions (in-memory, lost on restart — suitable for active design sessions)
@@ -543,10 +597,9 @@ app.post("/api/auth", (req, res) => {
     });
   }
 
-  const usage = getUsage(userId);
   res.json({
     user,
-    usage: { used: usage, limit: FREE_LIMIT, remaining: Math.max(0, FREE_LIMIT - usage) },
+    usage: getUserUsage(userId),
   });
 });
 
@@ -652,23 +705,26 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
   priorities = validatePriorities(priorities || []);
   customPrompt = sanitizeStr(customPrompt, 1000);
 
-  // Check usage limit
-  const usage = getUsage(userId);
-  if (usage >= FREE_LIMIT) {
+  // Check usage limit (free + paid combined)
+  const before = getUserUsage(userId);
+  if (before.remaining <= 0) {
     return res.status(403).json({
       error: "limit_reached",
-      message: `You've used all ${FREE_LIMIT} free designs. Pay ${PACK_PRICE.toLocaleString()} UZS to unlock more.`,
-      usage: { used: usage, limit: FREE_LIMIT, remaining: 0 },
+      message: `You've used all ${FREE_LIMIT} free designs. Pay ${PACK_PRICE_STARS} ⭐ Telegram Stars to unlock ${PACK_SIZE} more.`,
+      usage: before,
+      pack: { size: PACK_SIZE, priceStars: PACK_PRICE_STARS },
     });
   }
 
   try {
     const prompt = buildPrompt({ roomType, styleKey, customPrompt, goal, budget, priorities });
-    console.log(`[generate] user=${userId} room=${roomType} style=${styleKey || "custom"}`);
+    console.log(`[generate] user=${userId} room=${roomType} style=${styleKey || "custom"} free=${before.freeRemaining} paid=${before.paidCredits}`);
 
     const generatedUrl = await runEdit(photoUrl, prompt);
-    const newCount = incUsage(userId);
-    const remaining = Math.max(0, FREE_LIMIT - newCount);
+
+    // Consume from free first, then paid credits
+    if (before.freeRemaining > 0) incUsage(userId);
+    else consumePaidCredit(userId);
 
     // Store in session
     setSession(userId, {
@@ -680,7 +736,7 @@ app.post("/api/generate", generateLimiter, async (req, res) => {
     res.json({
       generatedUrl,
       originalUrl: photoUrl,
-      usage: { used: newCount, limit: FREE_LIMIT, remaining },
+      usage: getUserUsage(userId),
     });
   } catch (err) {
     console.error("[api/generate]", err.message);
@@ -699,11 +755,12 @@ app.post("/api/modify", generateLimiter, async (req, res) => {
     return res.status(400).json({ error: "userId, generatedUrl, and modificationText required" });
   }
 
-  const usage = getUsage(userId);
-  if (usage >= FREE_LIMIT) {
+  const before = getUserUsage(userId);
+  if (before.remaining <= 0) {
     return res.status(403).json({
       error: "limit_reached",
-      usage: { used: usage, limit: FREE_LIMIT, remaining: 0 },
+      usage: before,
+      pack: { size: PACK_SIZE, priceStars: PACK_PRICE_STARS },
     });
   }
 
@@ -717,8 +774,8 @@ app.post("/api/modify", generateLimiter, async (req, res) => {
     const freshUrl = await uploadImage(buf);
 
     const newUrl = await runEdit(freshUrl, editPrompt);
-    const newCount = incUsage(userId);
-    const remaining = Math.max(0, FREE_LIMIT - newCount);
+    if (before.freeRemaining > 0) incUsage(userId);
+    else consumePaidCredit(userId);
 
     // Update session
     const session = getSession(userId);
@@ -729,7 +786,7 @@ app.post("/api/modify", generateLimiter, async (req, res) => {
 
     res.json({
       generatedUrl: newUrl,
-      usage: { used: newCount, limit: FREE_LIMIT, remaining },
+      usage: getUserUsage(userId),
     });
   } catch (err) {
     console.error("[api/modify]", err.message);
@@ -739,8 +796,30 @@ app.post("/api/modify", generateLimiter, async (req, res) => {
 
 // Get usage
 app.get("/api/user/:userId/usage", (req, res) => {
-  const usage = getUsage(req.params.userId);
-  res.json({ used: usage, limit: FREE_LIMIT, remaining: Math.max(0, FREE_LIMIT - usage) });
+  res.json(getUserUsage(req.params.userId));
+});
+
+// Create a Telegram Stars invoice link for a credits pack
+app.post("/api/create-invoice", async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) return res.status(400).json({ error: "userId required" });
+
+  try {
+    const payload = `pack_${userId}_${Date.now()}`;
+    const link = await bot.telegram.createInvoiceLink({
+      title: `${PACK_SIZE} More Designs`,
+      description: `Unlock ${PACK_SIZE} more AI room redesigns on LiveSpace AI.`,
+      payload,
+      provider_token: "", // empty for Telegram Stars
+      currency: "XTR",
+      prices: [{ label: `${PACK_SIZE} Designs`, amount: PACK_PRICE_STARS }],
+    });
+    console.log(`[invoice] created for user=${userId} payload=${payload}`);
+    res.json({ invoiceLink: link, payload, priceStars: PACK_PRICE_STARS, packSize: PACK_SIZE });
+  } catch (err) {
+    console.error("[api/create-invoice]", err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Get all static data (styles, rooms, goals, budgets, priorities)
@@ -762,7 +841,8 @@ app.get("/api/data", (req, res) => {
       Object.entries(PRIORITIES).map(([k, v]) => [k, { emoji: v.emoji, en: v.en, ru: v.ru, uz: v.uz }])
     ),
     freeLimit: FREE_LIMIT,
-    packPrice: PACK_PRICE,
+    packSize: PACK_SIZE,
+    packPriceStars: PACK_PRICE_STARS,
   });
 });
 
@@ -817,7 +897,7 @@ bot.command("help", (ctx) => {
     "2\\. Choose your style, goal, and budget\n" +
     "3\\. Get an AI\\-powered redesign\\!\n\n" +
     `✨ First ${FREE_LIMIT} designs FREE\n` +
-    `💳 Then ${PACK_PRICE.toLocaleString()} UZS for 3 more\n\n` +
+    `⭐ Then ${PACK_PRICE_STARS} Telegram Stars for ${PACK_SIZE} more\n\n` +
     "/start — Open the app\n" +
     "/usage — Check remaining designs",
     {
@@ -833,11 +913,10 @@ bot.command("help", (ctx) => {
 
 // /usage
 bot.command("usage", (ctx) => {
-  const used = getUsage(ctx.from.id);
-  const remaining = Math.max(0, FREE_LIMIT - used);
-  const bar = "🟪".repeat(Math.min(used, FREE_LIMIT)) + "⬜".repeat(remaining);
+  const u = getUserUsage(ctx.from.id);
+  const bar = "🟪".repeat(Math.min(u.used, FREE_LIMIT)) + "⬜".repeat(u.freeRemaining);
   return ctx.reply(
-    `📊 Designs: ${used}/${FREE_LIMIT}\n${bar}\n🆓 Remaining: ${remaining}`,
+    `📊 Free: ${u.used}/${FREE_LIMIT}\n${bar}\n🆓 Free remaining: ${u.freeRemaining}\n⭐ Paid credits: ${u.paidCredits}\n✨ Total available: ${u.remaining}`,
     {
       reply_markup: {
         inline_keyboard: [[
@@ -857,6 +936,43 @@ bot.command("lang", (ctx) => {
       ]],
     },
   });
+});
+
+// ── Telegram Stars payment handlers ─────────
+// Approve all pre-checkout queries (must answer within 10 seconds)
+bot.on("pre_checkout_query", async (ctx) => {
+  try {
+    await ctx.answerPreCheckoutQuery(true);
+    console.log(`[payment] pre_checkout approved for user=${ctx.from.id} payload=${ctx.preCheckoutQuery.invoice_payload}`);
+  } catch (err) {
+    console.error("[payment] pre_checkout error:", err.message);
+  }
+});
+
+// Successful payment → grant the user PACK_SIZE paid credits
+bot.on("successful_payment", async (ctx) => {
+  try {
+    const userId = ctx.from.id;
+    const payment = ctx.message.successful_payment;
+    const amountStars = payment.total_amount;
+    const newBalance = addPaidCredits(userId, PACK_SIZE);
+    console.log(`[payment] success user=${userId} stars=${amountStars} payload=${payment.invoice_payload} new_credits=${newBalance}`);
+
+    const user = getUser(userId);
+    const lang = user?.lang || "en";
+    const msgs = {
+      en: `✅ Payment received! ${PACK_SIZE} more designs are unlocked. Tap below to continue:`,
+      ru: `✅ Платёж получен! Открыто ещё ${PACK_SIZE} дизайнов. Нажмите ниже, чтобы продолжить:`,
+      uz: `✅ To'lov qabul qilindi! Yana ${PACK_SIZE} ta dizayn ochildi. Davom etish uchun bosing:`,
+    };
+    await ctx.reply(msgs[lang] || msgs.en, {
+      reply_markup: {
+        inline_keyboard: [[{ text: "🏠 Open LiveSpace AI", web_app: { url: APP_URL } }]],
+      },
+    });
+  } catch (err) {
+    console.error("[payment] successful_payment handler error:", err.message);
+  }
 });
 
 // Photo in chat → redirect to web app

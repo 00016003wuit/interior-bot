@@ -694,7 +694,8 @@ const API = '';
 const state = {
   user: null,
   lang: 'en',
-  usage: { used: 0, limit: 5, remaining: 5 },
+  usage: { used: 0, limit: 5, freeRemaining: 5, paidCredits: 0, remaining: 5 },
+  pack: { size: 5, priceStars: 50 },
   currentScreen: 'splash',
   onboardStep: 0,
   prefs: { roomType: null, ownership: null, goal: null, budget: null, priorities: [] },
@@ -790,9 +791,13 @@ const T = {
     modifySug6: "New furniture",
 
     limitTitle: "Free Designs Used Up",
-    limitDesc: "You\u2019ve used all your free designs. Unlock more to continue transforming your space.",
-    limitFor3: "for 3 more designs",
-    contactSupport: "Contact Support After Payment",
+    limitDesc: "You\u2019ve used all your free designs. Pay with Telegram Stars to unlock more.",
+    limitForPack: "for {n} more designs",
+    payStars: "Pay {price} \u2B50",
+    payProcessing: "Processing payment...",
+    paySuccess: "Payment received! {n} designs unlocked.",
+    payCancelled: "Payment cancelled",
+    payFailed: "Payment failed. Please try again.",
     backToResult: "Back to Result",
 
     error: "Something went wrong",
@@ -880,9 +885,13 @@ const T = {
     modifySug6: "\u041d\u043e\u0432\u0430\u044f \u043c\u0435\u0431\u0435\u043b\u044c",
 
     limitTitle: "\u0411\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u044b\u0435 \u0434\u0438\u0437\u0430\u0439\u043d\u044b \u0437\u0430\u043a\u043e\u043d\u0447\u0438\u043b\u0438\u0441\u044c",
-    limitDesc: "\u0412\u044b \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043b\u0438 \u0432\u0441\u0435 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u044b\u0435 \u0434\u0438\u0437\u0430\u0439\u043d\u044b. \u0420\u0430\u0437\u0431\u043b\u043e\u043a\u0438\u0440\u0443\u0439\u0442\u0435 \u0435\u0449\u0451.",
-    limitFor3: "\u0437\u0430 3 \u0434\u0438\u0437\u0430\u0439\u043d\u0430",
-    contactSupport: "\u0421\u0432\u044f\u0437\u0430\u0442\u044c\u0441\u044f \u0441 \u043f\u043e\u0434\u0434\u0435\u0440\u0436\u043a\u043e\u0439 \u043f\u043e\u0441\u043b\u0435 \u043e\u043f\u043b\u0430\u0442\u044b",
+    limitDesc: "\u0412\u044b \u0438\u0441\u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u043b\u0438 \u0432\u0441\u0435 \u0431\u0435\u0441\u043f\u043b\u0430\u0442\u043d\u044b\u0435 \u0434\u0438\u0437\u0430\u0439\u043d\u044b. \u041e\u043f\u043b\u0430\u0442\u0438\u0442\u0435 Telegram Stars, \u0447\u0442\u043e\u0431\u044b \u043f\u0440\u043e\u0434\u043e\u043b\u0436\u0438\u0442\u044c.",
+    limitForPack: "\u0437\u0430 {n} \u0434\u043e\u043f\u043e\u043b\u043d\u0438\u0442\u0435\u043b\u044c\u043d\u044b\u0445 \u0434\u0438\u0437\u0430\u0439\u043d\u043e\u0432",
+    payStars: "\u041e\u043f\u043b\u0430\u0442\u0438\u0442\u044c {price} \u2B50",
+    payProcessing: "\u041e\u0431\u0440\u0430\u0431\u043e\u0442\u043a\u0430 \u043f\u043b\u0430\u0442\u0435\u0436\u0430...",
+    paySuccess: "\u041f\u043b\u0430\u0442\u0451\u0436 \u043f\u043e\u043b\u0443\u0447\u0435\u043d! {n} \u0434\u0438\u0437\u0430\u0439\u043d\u043e\u0432 \u0440\u0430\u0437\u0431\u043b\u043e\u043a\u0438\u0440\u043e\u0432\u0430\u043d\u043e.",
+    payCancelled: "\u041f\u043b\u0430\u0442\u0451\u0436 \u043e\u0442\u043c\u0435\u043d\u0451\u043d",
+    payFailed: "\u041e\u0448\u0438\u0431\u043a\u0430 \u043f\u043b\u0430\u0442\u0435\u0436\u0430. \u041f\u043e\u043f\u0440\u043e\u0431\u0443\u0439\u0442\u0435 \u0441\u043d\u043e\u0432\u0430.",
     backToResult: "\u0412\u0435\u0440\u043d\u0443\u0442\u044c\u0441\u044f \u043a \u0440\u0435\u0437\u0443\u043b\u044c\u0442\u0430\u0442\u0443",
 
     error: "\u0427\u0442\u043e-\u0442\u043e \u043f\u043e\u0448\u043b\u043e \u043d\u0435 \u0442\u0430\u043a",
@@ -970,9 +979,13 @@ const T = {
     modifySug6: "Yangi mebel",
 
     limitTitle: "Bepul dizaynlar tugadi",
-    limitDesc: "Barcha bepul dizaynlardan foydalandingiz. Davom etish uchun qo'shimcha oching.",
-    limitFor3: "3 ta dizayn uchun",
-    contactSupport: "To'lovdan keyin qo'llab-quvvatlashga murojaat qiling",
+    limitDesc: "Barcha bepul dizaynlardan foydalandingiz. Davom etish uchun Telegram Stars bilan to'lang.",
+    limitForPack: "yana {n} ta dizayn uchun",
+    payStars: "{price} \u2B50 to'lash",
+    payProcessing: "To'lov amalga oshirilmoqda...",
+    paySuccess: "To'lov qabul qilindi! {n} ta dizayn ochildi.",
+    payCancelled: "To'lov bekor qilindi",
+    payFailed: "To'lov xatosi. Qayta urinib ko'ring.",
     backToResult: "Natijaga qaytish",
 
     error: "Xatolik yuz berdi",
@@ -1309,15 +1322,20 @@ screens.modify = (el) => {
 };
 
 screens.limit = (el) => {
+  const price = state.pack?.priceStars || 50;
+  const size = state.pack?.size || 5;
+  const priceLabel = String(t('payStars')).replace('{price}', price);
+  const subLabel = String(t('limitForPack')).replace('{n}', size);
   el.innerHTML = `
     <div class="limit-screen">
       <span class="limit-icon">\u{1F512}</span>
       <div class="limit-title">${t('limitTitle')}</div>
       <div class="limit-desc">${t('limitDesc')}</div>
-      <div class="limit-price">10,000 UZS</div>
-      <div class="limit-price-sub">${t('limitFor3')}</div>
-      <div class="payment-methods"><span>Click</span><span>Payme</span><span>Uzum</span></div>
-      <button class="btn btn-primary" style="max-width:320px;" onclick="if(tg)tg.close()">${t('contactSupport')}</button>
+      <div class="limit-price">${price} \u2B50</div>
+      <div class="limit-price-sub">${subLabel}</div>
+      <div class="payment-methods"><span>Telegram Stars</span></div>
+      <button class="btn btn-primary" id="pay-stars-btn" style="max-width:320px;" onclick="payWithStars()">${priceLabel}</button>
+      <div id="pay-status" style="margin-top:12px;font-size:13px;color:var(--text2);min-height:18px;"></div>
       ${state.result ? `<button class="btn btn-ghost mt-12" onclick="showScreen('result')">${t('backToResult')}</button>` : ''}
       <button class="btn btn-ghost" onclick="startNewDesign()">${t('startOver')}</button>
     </div>`;
@@ -1492,6 +1510,60 @@ document.getElementById('file-input').addEventListener('change', (e) => {
   });
   e.target.value = '';
 });
+
+// ── Telegram Stars payment ───────────────────
+async function payWithStars() {
+  const btn = document.getElementById('pay-stars-btn');
+  const statusEl = document.getElementById('pay-status');
+  if (!state.user) {
+    if (statusEl) statusEl.textContent = 'Please open this app from Telegram.';
+    return;
+  }
+  if (btn) btn.disabled = true;
+  if (statusEl) statusEl.textContent = t('payProcessing');
+
+  try {
+    const res = await fetch(API + '/api/create-invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: state.user.id }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.invoiceLink) throw new Error(data.error || 'invoice_failed');
+
+    if (!tg || typeof tg.openInvoice !== 'function') {
+      if (statusEl) statusEl.textContent = 'Telegram Stars not available in this version. Please update Telegram.';
+      if (btn) btn.disabled = false;
+      return;
+    }
+
+    tg.openInvoice(data.invoiceLink, async (status) => {
+      if (status === 'paid') {
+        if (statusEl) statusEl.textContent = String(t('paySuccess')).replace('{n}', data.packSize || 5);
+        // Refresh usage from server (credits were granted server-side via successful_payment)
+        try {
+          const u = await fetch(API + '/api/user/' + state.user.id + '/usage').then(r => r.json());
+          state.usage = u;
+        } catch (_) {}
+        // Brief delay so user reads the success message, then return to upload
+        setTimeout(() => { showScreen(state.result ? 'result' : 'upload'); }, 1500);
+      } else if (status === 'cancelled') {
+        if (statusEl) statusEl.textContent = t('payCancelled');
+        if (btn) btn.disabled = false;
+      } else if (status === 'failed') {
+        if (statusEl) statusEl.textContent = t('payFailed');
+        if (btn) btn.disabled = false;
+      } else {
+        // pending — keep waiting; let user retry if needed
+        if (btn) btn.disabled = false;
+      }
+    });
+  } catch (err) {
+    console.error('payWithStars error', err);
+    if (statusEl) statusEl.textContent = t('payFailed');
+    if (btn) btn.disabled = false;
+  }
+}
 
 // ── Generation ───────────────────────────────
 async function startGeneration() {
