@@ -10,10 +10,12 @@ const path = require("path");
 const fs = require("fs");
 const crypto = require("crypto");
 const multer = require("multer");
+const Anthropic = require("@anthropic-ai/sdk");
 
 // ── Environment ───────────────────────────────
 const TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const FAL_KEY = process.env.FAL_KEY;
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const WEBHOOK_URL = process.env.WEBHOOK_URL;
 const PORT = process.env.PORT || 3000;
 const APP_URL = process.env.APP_URL || WEBHOOK_URL;
@@ -23,6 +25,7 @@ const PACK_PRICE = 10000; // UZS per pack
 
 console.log("TELEGRAM_BOT_TOKEN :", TOKEN ? TOKEN.slice(0, 8) + "..." : "MISSING");
 console.log("FAL_KEY            :", FAL_KEY ? FAL_KEY.slice(0, 8) + "..." : "MISSING");
+console.log("ANTHROPIC_API_KEY  :", ANTHROPIC_API_KEY ? ANTHROPIC_API_KEY.slice(0, 8) + "..." : "MISSING (photo validation disabled)");
 console.log("WEBHOOK_URL        :", WEBHOOK_URL || "MISSING");
 console.log("APP_URL            :", APP_URL || "MISSING");
 console.log("PORT               :", PORT);
@@ -30,6 +33,8 @@ console.log("PORT               :", PORT);
 if (!TOKEN) { console.error("ERROR: TELEGRAM_BOT_TOKEN not set"); process.exit(1); }
 if (!FAL_KEY) { console.error("ERROR: FAL_KEY not set"); process.exit(1); }
 if (!WEBHOOK_URL) { console.error("ERROR: WEBHOOK_URL not set"); process.exit(1); }
+
+const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
 
 fal.config({ credentials: FAL_KEY });
 
@@ -256,6 +261,42 @@ async function uploadImage(buffer) {
   const url = await fal.storage.upload(blob);
   console.log(`[fal] uploaded: ${url}`);
   return url;
+}
+
+/**
+ * Validates that an image contains a home interior (room, living space, etc.)
+ * using Claude vision. Returns { valid: true } or { valid: false, reason: string }.
+ * If ANTHROPIC_API_KEY is not set, validation is skipped (returns valid).
+ * @param {Buffer} buffer - Raw image bytes
+ * @param {string} mimeType - Image MIME type (e.g. "image/jpeg")
+ * @returns {Promise<{valid: boolean, reason?: string}>}
+ */
+async function validateRoomPhoto(buffer, mimeType) {
+  if (!anthropic) return { valid: true };
+
+  const base64 = buffer.toString("base64");
+  const mediaType = (mimeType || "image/jpeg").split("/")[1] === "png" ? "image/png"
+    : mimeType === "image/webp" ? "image/webp"
+    : "image/jpeg";
+
+  const response = await anthropic.messages.create({
+    model: "claude-haiku-4-5-20251001",
+    max_tokens: 64,
+    messages: [{
+      role: "user",
+      content: [
+        { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+        {
+          type: "text",
+          text: "Does this image show an indoor room or home interior space (living room, bedroom, kitchen, bathroom, dining room, office, hallway, etc.)? Reply with ONLY 'YES' or 'NO'.",
+        },
+      ],
+    }],
+  });
+
+  const answer = response.content[0]?.text?.trim().toUpperCase();
+  if (answer === "YES") return { valid: true };
+  return { valid: false, reason: "Please upload a photo of an indoor room or home interior (living room, bedroom, kitchen, bathroom, etc.)." };
 }
 
 /**
@@ -539,6 +580,14 @@ app.post("/api/upload", upload_mw.array("photos", 3), async (req, res) => {
     const files = req.files;
     if (!files || files.length === 0) {
       return res.status(400).json({ error: "No photos provided" });
+    }
+
+    // Validate each photo contains a home interior before processing
+    for (const file of files) {
+      const check = await validateRoomPhoto(file.buffer, file.mimetype);
+      if (!check.valid) {
+        return res.status(400).json({ error: "not_a_room", message: check.reason });
+      }
     }
 
     const urls = [];

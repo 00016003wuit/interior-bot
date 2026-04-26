@@ -1503,7 +1503,15 @@ async function startGeneration() {
     if (state.user) fd.append('userId', state.user.id);
     const upRes = await fetch(API + '/api/upload', { method: 'POST', body: fd });
     const upData = await upRes.json();
-    if (!upRes.ok) throw new Error(upData.error || 'Upload failed');
+    if (!upRes.ok) {
+      if (upData.error === 'not_a_room') {
+        state.errorMessage = upData.message || 'Please upload a photo of an indoor room or home interior.';
+        state.lastAction = startGeneration;
+        showScreen('error');
+        return;
+      }
+      throw new Error(upData.error || 'Upload failed');
+    }
     state.photoUrls = upData.urls;
 
     const genRes = await api('/api/generate', {
