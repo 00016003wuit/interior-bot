@@ -222,7 +222,7 @@ const PRIORITIES = {
 };
 
 // ── Design styles (21) ────────────────────────
-const PRESERVE = "redesign this exact room, keep all existing windows doors walls ceiling as they are, only add furniture and decor, do not add any new architectural elements, do not add arches doors or openings that don't exist";
+const PRESERVE = "redesign this EXACT room as shown in the photo, keep the identical camera angle and perspective, keep the same room shape and proportions, keep the same wall positions and ceiling height, keep the exact same number and position of windows (do not invent new windows), keep the exact same doors and openings, keep the same floor area and layout, do NOT add windows doors balconies arches plants artwork or any architectural feature that is not already visible in the original photo, only restyle existing surfaces and swap existing furniture for new pieces in the same positions and similar sizes, work with what the room already has";
 const QUALITY = "8k uhd, ultra sharp, highly detailed, professional interior photography, sharp focus, high resolution";
 
 const STYLES = {
@@ -275,28 +275,50 @@ async function validateRoomPhoto(buffer, mimeType) {
   if (!anthropic) return { valid: true };
 
   const base64 = buffer.toString("base64");
-  const mediaType = (mimeType || "image/jpeg").split("/")[1] === "png" ? "image/png"
+  const mediaType = mimeType === "image/png" ? "image/png"
     : mimeType === "image/webp" ? "image/webp"
     : "image/jpeg";
 
+  const validationPrompt = `You are a strict gatekeeper for an interior redesign app. The user must upload a clear photo of the inside of a real residential room. Decide if this image qualifies.
+
+REJECT (answer NO) if ANY of these are true:
+- The main subject is a person, body part, pet, animal, food, vehicle, screen, laptop, phone, document, or any object — not the room itself
+- It is a close-up of a single wall, floor, ceiling, corner, door, or surface without showing the wider room context
+- It only shows a fragment (e.g. just a couch, just a bed, just a sink) without enough of the surrounding room
+- It is an outdoor scene, building exterior, garden, balcony view, street, or landscape
+- It is a screenshot, drawing, sketch, 3D rendering, floor plan, or AI-generated image
+- It is too dark, too blurry, too cluttered, or otherwise unusable for redesign
+- It is a commercial or public space (store, restaurant, office lobby, hotel, gym) — only private residential rooms are allowed
+- The room is unidentifiable or ambiguous
+
+ACCEPT (answer YES) ONLY if ALL of these are true:
+- It is clearly the interior of a private residential room (living room, bedroom, kitchen, bathroom, dining room, home office, hallway, kids room, nursery)
+- At least TWO architectural elements are visible together (floor AND walls, or walls AND ceiling, or walls AND multiple pieces of furniture)
+- A meaningful portion of the room is in frame (not just one wall or one object)
+- The photo provides enough spatial context to redesign the entire space
+
+Reply with EXACTLY one word: YES or NO. No other text.`;
+
   const response = await anthropic.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 64,
+    max_tokens: 8,
     messages: [{
       role: "user",
       content: [
         { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
-        {
-          type: "text",
-          text: "Does this image show an indoor room or home interior space (living room, bedroom, kitchen, bathroom, dining room, office, hallway, etc.)? Reply with ONLY 'YES' or 'NO'.",
-        },
+        { type: "text", text: validationPrompt },
       ],
     }],
   });
 
-  const answer = response.content[0]?.text?.trim().toUpperCase();
+  const raw = response.content[0]?.text?.trim().toUpperCase() || "";
+  const answer = raw.replace(/[^A-Z]/g, "").slice(0, 3);
+  console.log(`[validate] room photo check: ${answer}`);
   if (answer === "YES") return { valid: true };
-  return { valid: false, reason: "Please upload a photo of an indoor room or home interior (living room, bedroom, kitchen, bathroom, etc.)." };
+  return {
+    valid: false,
+    reason: "This doesn't look like a clear photo of a room. Please upload a wide shot of the inside of your room (living room, bedroom, kitchen, bathroom, etc.) showing the floor, walls, and furniture together.",
+  };
 }
 
 /**
@@ -307,7 +329,8 @@ async function validateRoomPhoto(buffer, mimeType) {
  * @returns {Promise<string>} URL of the AI-generated redesigned image
  */
 async function runEdit(imageUrl, prompt) {
-  const fullPrompt = `${prompt}, pinterest interior design, architectural digest quality, luxury home, professional photography, ultra detailed, 8k`;
+  const fidelity = "STRICT FIDELITY: redesign only the room shown in this photo. Match the exact same camera angle, same perspective, same room dimensions, same wall and ceiling positions, same window count and locations, same door positions. Do NOT add windows, doors, balconies, skylights, plants, or any architectural feature that is not visible in the source photo. Work with what the room already has — only update finishes, paint, flooring, lighting, and furniture in the existing positions.";
+  const fullPrompt = `${fidelity} ${prompt}, photorealistic interior photography, sharp focus, ultra detailed, 8k`;
   console.log(`[fal] generating — prompt: "${fullPrompt.slice(0, 100)}..."`);
   const result = await fal.subscribe("fal-ai/nano-banana/edit", {
     input: {
